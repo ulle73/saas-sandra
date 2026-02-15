@@ -1,0 +1,50 @@
+name: Weekly SaaS Tasks
+
+on:
+  schedule:
+    # Every Sunday at 04:00 UTC
+    - cron: '0 4 * * 0'
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      run_news:
+        description: 'Run news fetch'
+        default: 'true'
+        type: boolean
+      run_leads:
+        description: 'Run lead generation'
+        default: 'true'
+        type: boolean
+
+jobs:
+  weekly-tasks:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch company news
+        if: ${{ github.event.inputs.run_news == 'true' || github.event_name == 'schedule' }}
+        run: npm run news:fetch
+
+      - name: Generate AI leads
+        if: ${{ github.event.inputs.run_leads == 'true' || github.event_name == 'schedule' }}
+        run: npm run leads:generate

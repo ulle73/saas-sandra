@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Status color classes */
+.status-green {
+  background-color: #10b981;
+  border-left: 4px solid #10b981;
+}
+
+.status-yellow {
+  background-color: #f59e0b;
+  border-left: 4px solid #f59e0b;
+}
+
+.status-red {
+  background-color: #ef4444;
+  border-left: 4px solid #ef4444;
+}
+/* General styles */
+body {
+  background-color: #f9fafb; /* gray-50 */
+  color: #111827; /* gray-900 */
+}
+
+.btn-primary {
+  background-color: #2563eb; /* blue-600 */
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8; /* blue-700 */
+}
+
+.btn-secondary {
+  background-color: #e5e7eb; /* gray-200 */
+  color: #111827; /* gray-900 */
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db; /* gray-300 */
+}
+
+.card {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.input-field {
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+.input-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #2563eb; /* blue-500 */
+}
+
+.table-header {
+  background-color: #f3f4f6; /* gray-100 */
+  text-align: left;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+}
+
+.table-cell {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+}

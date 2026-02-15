@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+data source db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  contacts  Contact[]
+}
+
+model Contact {
+  id               String    @id @default(uuid())
+  user_id          String
+  user             User      @relation(fields: [user_id], references: [id])
+  name             String
+  email            String?
+  phone            String?
+  linkedin_url     String?
+  company_id       String?
+  company          Company?  @relation(fields: [company_id], references: [id])
+  last_touchpoint  DateTime?
+  next_activity    DateTime?
+  status           String    @default("yellow")
+  notes            String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  activities       Activity[]
+}
+
+model Company {
+  id            String    @id @default(uuid())
+  name          String
+  industry      String?
+  website       String?
+  news_keywords String[]
+  contacts      Contact[]
+  news_items    NewsItem[]
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  contact_id  String
+  contact     Contact  @relation(fields: [contact_id], references: [id])
+  type        String   // call, meeting, email, linkedin
+  notes       String?
+  timestamp   DateTime @default(now())
+  outcome     String?
+}
+
+model NewsItem {
+  id           String   @id @default(uuid())
+  company_id   String
+  company      Company  @relation(fields: [company_id], references: [id])
+  title        String
+  url          String
+  source       String
+  news_type    String   // layoff, order, media, recruitment
+  published_at DateTime
+  created_at   DateTime @default(now())
+}
+
+model WeeklyLead {
+  id          String   @id @default(uuid())
+  contact_id  String?
+  company_id  String?
+  reason      String
+  pitch       String
+  generated_at DateTime @default(now())
+}
