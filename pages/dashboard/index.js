@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
+import { computeContactStatus } from '../../lib/contactStatus'
 
 export default function Dashboard({ session }) {
   const router = useRouter()
   const [stats, setStats] = useState({ green: 0, yellow: 0, red: 0, total: 0 })
   const [recentActivity, setRecentActivity] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!session) {
@@ -20,26 +22,34 @@ export default function Dashboard({ session }) {
   const fetchStats = async () => {
     try {
       // Get contact counts by status
-      const { data: contacts } = await supabase
+      const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
-        .select('status')
+        .select('last_touchpoint, next_activity')
         .eq('user_id', session.user.id)
+
+      if (contactsError) throw contactsError
 
       const counts = { green: 0, yellow: 0, red: 0, total: contacts?.length || 0 }
       contacts?.forEach(c => {
-        if (counts[c.status] !== undefined) counts[c.status]++
+        const status = computeContactStatus(c)
+        counts[status] += 1
       })
       setStats(counts)
 
       // Get recent activities
-      const { data: activities } = await supabase
+      const { data: activities, error: activitiesError } = await supabase
         .from('activities')
-        .select('*, contacts(*)')
+        .select('id, type, timestamp, contacts(name)')
+        .eq('user_id', session.user.id)
         .order('timestamp', { ascending: false })
         .limit(5)
+
+      if (activitiesError) throw activitiesError
+
       setRecentActivity(activities || [])
     } catch (error) {
       console.error('Error fetching stats:', error)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -80,6 +90,7 @@ export default function Dashboard({ session }) {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">📊 Dashboard</h2>
+        {error && <p className="text-red-600 mb-4">{error}</p>}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -150,11 +161,11 @@ export default function Dashboard({ session }) {
               <p className="font-semibold">🟢 Active</p>
               <p className="text-sm text-gray-600">Activity scheduled in the future</p>
             </div>
-            <div className="p-4 bg-yellow rounded-lg border-l-4 border-yellow">
+            <div className="p-4 bg-yellow-100 rounded-lg border-l-4 border-yellow-500">
               <p className="font-semibold">🟡 Recent</p>
               <p className="text-sm text-gray-600">Contacted within 4 weeks, no follow-up scheduled</p>
             </div>
-            <div className="p-4 bg-red rounded-lg border-l-4 border-red">
+            <div className="p-4 bg-red-100 rounded-lg border-l-4 border-red-500">
               <p className="font-semibold">🔴 Needs Attention</p>
               <p className="text-sm text-gray-600">No contact for more than 4 weeks</p>
             </div>

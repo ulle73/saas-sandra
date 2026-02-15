@@ -7,6 +7,7 @@ export default function Companies({ session }) {
   const router = useRouter()
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!session) {
@@ -17,14 +18,34 @@ export default function Companies({ session }) {
   }, [session, router])
 
   const fetchCompanies = async () => {
-    const { data } = await supabase.from('companies').select('*').order('name')
-    setCompanies(data || [])
+    setLoading(true)
+    const { data, error: fetchError } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('name')
+
+    if (fetchError) {
+      setError(fetchError.message)
+    } else {
+      setCompanies(data || [])
+    }
     setLoading(false)
   }
 
   const deleteCompany = async (id) => {
     if (!confirm('Delete this company? All contacts will lose link.')) return
-    await supabase.from('companies').delete().eq('id', id)
+    const { error: deleteError } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+
     fetchCompanies()
   }
 
@@ -39,6 +60,7 @@ export default function Companies({ session }) {
         </div>
       </nav>
       <main className="max-w-4xl mx-auto py-6">
+        {error && <p className="text-red-600 mb-4">{error}</p>}
         <table className="min-w-full bg-white shadow rounded-lg overflow-hidden">
           <thead className="bg-gray-100">
             <tr>

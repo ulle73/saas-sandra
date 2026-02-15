@@ -6,6 +6,7 @@ export default function Leads({ session }) {
   const router = useRouter()
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!session) {
@@ -17,14 +18,20 @@ export default function Leads({ session }) {
 
   const fetchLeads = async () => {
     try {
-      const { data } = await supabase
+      setError('')
+      const { data, error: fetchError } = await supabase
         .from('weekly_leads')
         .select('*')
+        .eq('user_id', session.user.id)
         .order('generated_at', { ascending: false })
         .limit(20)
+
+      if (fetchError) throw fetchError
+
       setLeads(data || [])
     } catch (error) {
       console.error('Error loading leads', error)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -45,6 +52,7 @@ export default function Leads({ session }) {
       </nav>
 
       <main className="max-w-4xl mx-auto py-8">
+        {error && <p className="text-red-600 mb-4">{error}</p>}
         {leads.length === 0 ? (
           <p className="text-center text-gray-500">No leads generated yet.</p>
         ) : (

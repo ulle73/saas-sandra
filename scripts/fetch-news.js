@@ -1,69 +1,214 @@
-const fetch = require('node-fetch')
-const { createClient } = require('@supabase/supabase-js')
+import { createClient } from '@supabase/supabase-js'
+import { ensureEnvLoaded } from './load-env.js'
 
-// Load env (Node will read .env automatically if using a library, but we keep it simple)
+ensureEnvLoaded()
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const NEWSAPI_KEY = process.env.NEWSAPI_KEY
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
+const DEFAULT_KEYWORDS = ['layoffs', 'varsel', 'order', 'new contract', 'marketing campaign']
+const NEWS_LANGUAGES = [
+  'sv',
+  'en', // uncomment to include English results
+]
+const INCLUDE_MEDIA_MENTIONS = (process.env.NEWS_INCLUDE_MEDIA || 'true').toLowerCase() === 'true'
+const KEYWORD_ALIASES = {
+  layoff: ['layoff', 'layoffs', 'laid off', 'varsel', 'sparkar', 'avskedar', 'nedskarning'],
+  layoffs: ['layoff', 'layoffs', 'laid off', 'varsel', 'sparkar', 'avskedar', 'nedskarning'],
+  varsel: ['varsel', 'layoff', 'layoffs', 'avskedar', 'sparkar'],
+  sparkar: ['sparkar', 'sparkar', 'varsel', 'avskedar', 'layoff'],
+  avskedar: ['avskedar', 'avskedar', 'avsked', 'varsel', 'layoff'],
+  avslutar: ['avslutar', 'avslut', 'sager upp', 'terminates', 'ends'],
+  order: ['order', 'stororder', 'new order', 'kontrakt', 'contract'],
+  kontrakt: ['kontrakt', 'contract', 'new contract', 'agreement', 'order'],
+  'new contract': ['new contract', 'contract', 'kontrakt', 'agreement', 'order'],
+  'marketing campaign': ['marketing campaign', 'campaign', 'kundcase', 'customer case'],
+}
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Supabase credentials missing')
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('Missing Supabase credentials (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)')
   process.exit(1)
 }
+
 if (!NEWSAPI_KEY) {
-  console.error('NewsAPI key missing')
+  console.error('Missing NEWSAPI_KEY')
   process.exit(1)
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-async function fetchNewsForCompany(company) {
-  const keywords = company.news_keywords || []
-  if (!keywords.length) return []
-  const query = encodeURIComponent(keywords.join(' OR '))
-  const url = `https://newsapi.org/v2/everything?q=${query}&apiKey=${NEWSAPI_KEY}&language=en&sortBy=publishedAt&pageSize=5`
-  const resp = await fetch(url)
-  const data = await resp.json()
-  if (!data.articles) return []
-  // Transform articles to our schema
-  return data.articles.map(a => ({
-    company_id: company.id,
-    title: a.title,
-    description: a.description,
-    url: a.url,
-    source_name: a.source?.name,
-    published_at: a.publishedAt,
-  }))
+function classifyNewsType(text = '') {
+  const normalized = text.toLowerCase()
+  if (normalized.includes('layoff') || normalized.includes('varsel')) return 'layoff'
+  if (normalized.includes('order') || normalized.includes('new contract') || normalized.includes('contract')) return 'order'
+  if (normalized.includes('marketing campaign') || normalized.includes('campaign')) return 'marketing'
+  if (normalized.includes('recruit') || normalized.includes('hiring')) return 'recruitment'
+  return 'media'
+}
+
+async function sendTelegram(text) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return
+
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text }),
+  })
+
+  const payload = await response.json()
+  if (!payload.ok) {
+    throw new Error(payload.description || 'Telegram API error')
+  }
+}
+
+async function fetchArticles(companyName, keywords) {
+  const escapedCompany = `"${companyName}"`
+  const escapedKeywords = keywords.map((keyword) => `"${keyword}"`).join(' OR ')
+  const strictQuery = encodeURIComponent(`${escapedCompany} AND (${escapedKeywords})`)
+  const broadQuery = encodeURIComponent(escapedCompany)
+  const fromDate = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
+  const collected = []
+
+  for (const language of NEWS_LANGUAGES) {
+    const strictUrl = `https://newsapi.org/v2/everything?q=${strictQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=${language}&from=${fromDate}&sortBy=publishedAt&pageSize=20`
+    // eslint-disable-next-line no-await-in-loop
+    const strictResponse = await fetch(strictUrl)
+    // eslint-disable-next-line no-await-in-loop
+    const strictPayload = await strictResponse.json()
+    collected.push(...(strictPayload.articles || []))
+
+    // Fallback if strict search yields few/no hits in this language.
+    if ((strictPayload.articles || []).length < 3) {
+      const broadUrl = `https://newsapi.org/v2/everything?q=${broadQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=${language}&from=${fromDate}&sortBy=publishedAt&pageSize=30`
+      // eslint-disable-next-line no-await-in-loop
+      const broadResponse = await fetch(broadUrl)
+      // eslint-disable-next-line no-await-in-loop
+      const broadPayload = await broadResponse.json()
+      collected.push(...(broadPayload.articles || []))
+    }
+  }
+
+  const byUrl = new Map()
+  for (const article of collected) {
+    if (!article?.url) continue
+    if (!byUrl.has(article.url)) byUrl.set(article.url, article)
+  }
+  return [...byUrl.values()]
+}
+
+function expandKeywords(keywords) {
+  const expanded = new Set()
+
+  for (const rawKeyword of keywords) {
+    const keyword = rawKeyword.toLowerCase().trim()
+    if (!keyword) continue
+    expanded.add(keyword)
+
+    const aliases = KEYWORD_ALIASES[keyword]
+    if (aliases) {
+      for (const alias of aliases) expanded.add(alias)
+    }
+
+    // Light stemming to handle swedish/english inflections.
+    if (keyword.length > 5) expanded.add(keyword.slice(0, keyword.length - 1))
+    if (keyword.endsWith('ar') || keyword.endsWith('er') || keyword.endsWith('na')) {
+      expanded.add(keyword.slice(0, keyword.length - 2))
+    }
+  }
+
+  return [...expanded].filter((term) => term.length >= 3)
+}
+
+function analyzeArticle(article, companyName, keywordPatterns) {
+  const text = `${article?.title || ''}\n${article?.description || ''}`.toLowerCase()
+  const companyTerms = companyName
+    .toLowerCase()
+    .split(/\s+/)
+    .map((term) => term.replace(/[^\w]/g, ''))
+    .filter((term) => term.length > 2)
+
+  const hasCompanyMention = companyTerms.length
+    ? companyTerms.some((term) => text.includes(term))
+    : text.includes(companyName.toLowerCase())
+
+  const matchedKeyword = keywordPatterns.find((pattern) => text.includes(pattern)) || null
+  const hasKeyword = Boolean(matchedKeyword)
+  const isMatch = hasCompanyMention && (hasKeyword || INCLUDE_MEDIA_MENTIONS)
+  return { isMatch, hasKeyword, matchedKeyword }
 }
 
 async function main() {
-  // Get all companies with keywords
-  const { data: companies } = await supabase.from('companies').select('id, name, news_keywords')
-  if (!companies) return
-  for (const company of companies) {
-    const news = await fetchNewsForCompany(company)
-    if (news.length) {
-      // Insert news items (ignore duplicates by URL)
-      const { error } = await supabase.from('news_items').upsert(news, { onConflict: ['url'] })
-      if (error) console.error('Supabase upsert error:', error)
-      // Optionally send Telegram alert
-      if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-        const message = `📰 *${company.name}* news updates:\n` + news.map(item => `- ${item.title}`).join('\n')
-        try {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown' }),
-          })
-        } catch (e) {
-          console.error('Telegram notify error', e)
+  console.log('Fetching company news...')
+  const { data: companies, error } = await supabase
+    .from('companies')
+    .select('id, user_id, name, news_keywords')
+
+  if (error) {
+    console.error('Could not fetch companies:', error.message)
+    process.exit(1)
+  }
+
+  let insertedCount = 0
+
+  for (const company of companies || []) {
+    const keywords = (company.news_keywords?.length ? company.news_keywords : DEFAULT_KEYWORDS).slice(0, 8)
+    const keywordPatterns = expandKeywords(keywords)
+    const articles = await fetchArticles(company.name, keywords)
+
+    if (!articles.length) continue
+
+    const analyzed = articles
+      .filter((article) => article?.title && article?.url && article?.publishedAt)
+      .map((article) => ({ article, analysis: analyzeArticle(article, company.name, keywordPatterns) }))
+      .filter((item) => item.analysis.isMatch)
+
+    const rows = analyzed.map(({ article, analysis }) => {
+        const combinedText = `${article.title}\n${article.description || ''}`
+        return {
+          user_id: company.user_id,
+          company_id: company.id,
+          title: article.title,
+          url: article.url,
+          source: article.source?.name || null,
+          news_type: analysis.hasKeyword ? classifyNewsType(combinedText) : 'media',
+          published_at: article.publishedAt,
         }
+      })
+
+    if (!rows.length) {
+      console.log(`${company.name}: 0 relevant hits after filtering (fetched ${articles.length})`)
+      continue
+    }
+
+    const { data: upserted, error: upsertError } = await supabase
+      .from('news_items')
+      .upsert(rows, { onConflict: 'company_id,url' })
+      .select('title, news_type')
+
+    if (upsertError) {
+      console.error(`Failed storing news for ${company.name}:`, upsertError.message)
+      continue
+    }
+
+    insertedCount += upserted.length
+    const important = upserted.filter((item) => item.news_type !== 'general').slice(0, 3)
+    if (important.length) {
+      const lines = important.map((item) => `- [${item.news_type}] ${item.title}`).join('\n')
+      try {
+        await sendTelegram(`News alert: ${company.name}\n${lines}`)
+      } catch (notifyError) {
+        console.error('Telegram notification failed:', notifyError.message)
       }
     }
   }
-  console.log('News fetch completed')
+
+  console.log(`News fetch finished. Processed rows: ${insertedCount}`)
 }
 
-main().catch(err => console.error(err))
+main().catch((err) => {
+  console.error('Unexpected error in fetch-news:', err.message)
+  process.exit(1)
+})

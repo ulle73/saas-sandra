@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
+import { computeContactStatus, statusLabel } from '../../lib/contactStatus'
 
 export default function Contacts({ session }) {
   const router = useRouter()
   const [contacts, setContacts] = useState([])
-  const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
 
@@ -20,22 +21,28 @@ export default function Contacts({ session }) {
   }, [session, router])
 
   const fetchData = async () => {
+    setLoading(true)
+    setError('')
+
     try {
       // Fetch contacts
-      const { data: contactsData } = await supabase
+      const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
-        .select('*, companies(*)')
+        .select('*, companies(id, name)')
         .eq('user_id', session.user.id)
         .order('name')
-      setContacts(contactsData || [])
 
-      // Fetch companies for dropdown
-      const { data: companiesData } = await supabase
-        .from('companies')
-        .select('id, name')
-      setCompanies(companiesData || [])
+      if (contactsError) throw contactsError
+
+      const normalizedContacts = (contactsData || []).map((contact) => ({
+        ...contact,
+        status: computeContactStatus(contact),
+      }))
+      setContacts(normalizedContacts)
+
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching data:', error.message)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -43,18 +50,23 @@ export default function Contacts({ session }) {
 
   const deleteContact = async (id) => {
     if (!confirm('Are you sure you want to delete this contact?')) return
-    await supabase.from('contacts').delete().eq('id', id)
+    const { error: deleteError } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+
     fetchData()
   }
 
   const getStatusClass = (contact) => {
-    const now = new Date()
-    const nextActivity = contact.next_activity ? new Date(contact.next_activity) : null
-    const lastTouchpoint = contact.last_touchpoint ? new Date(contact.last_touchpoint) : null
-    const weeksSinceContact = lastTouchpoint ? (now - lastTouchpoint) / (1000 * 60 * 60 * 24 * 7) : Infinity
-
-    if (nextActivity && nextActivity > now) return 'status-green'
-    if (weeksSinceContact < 4) return 'status-yellow'
+    if (contact.status === 'green') return 'status-green'
+    if (contact.status === 'yellow') return 'status-yellow'
     return 'status-red'
   }
 
@@ -117,6 +129,7 @@ export default function Contacts({ session }) {
             </select>
           </div>
         </div>
+        {error && <p className="text-red-600 mb-4">{error}</p>}
 
         {/* Contacts Table */}
         <div className="card overflow-hidden">
@@ -153,8 +166,7 @@ export default function Contacts({ session }) {
                       ${contact.status === 'green' ? 'bg-green-200 text-green-800' :
                         contact.status === 'yellow' ? 'bg-yellow-200 text-yellow-800' :
                         'bg-red-200 text-red-800'}`}>
-                      {contact.status === 'green' ? '🟢 Active' :
-                       contact.status === 'yellow' ? '🟡 Recent' : '🔴 Needs Attention'}
+                      {statusLabel(contact.status)}
                     </span>
                   </td>
                   <td className="table-cell">

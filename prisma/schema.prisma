@@ -2,73 +2,95 @@ generator client {
   provider = "prisma-client-js"
 }
 
-data source db {
+datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  contacts  Contact[]
-}
-
-model Contact {
-  id               String    @id @default(uuid())
-  user_id          String
-  user             User      @relation(fields: [user_id], references: [id])
-  name             String
-  email            String?
-  phone            String?
-  linkedin_url     String?
-  company_id       String?
-  company          Company?  @relation(fields: [company_id], references: [id])
-  last_touchpoint  DateTime?
-  next_activity    DateTime?
-  status           String    @default("yellow")
-  notes            String?
-  created_at       DateTime  @default(now())
-  updated_at       DateTime  @updatedAt
-  activities       Activity[]
+  id      String @id @default(uuid())
+  email   String @unique
+  @@ignore
 }
 
 model Company {
-  id            String    @id @default(uuid())
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String      @map("user_id") @db.Uuid
+  name         String
+  industry     String?
+  website      String?
+  newsKeywords String[]    @map("news_keywords")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+  contacts     Contact[]
+  newsItems    NewsItem[]
+  weeklyLeads  WeeklyLead[]
+
+  @@map("companies")
+}
+
+model Contact {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  companyId     String?      @map("company_id") @db.Uuid
   name          String
-  industry      String?
-  website       String?
-  news_keywords String[]
-  contacts      Contact[]
-  news_items    NewsItem[]
+  email         String?
+  phone         String?
+  linkedinUrl   String?      @map("linkedin_url")
+  lastTouchpoint DateTime?   @map("last_touchpoint") @db.Timestamptz(6)
+  nextActivity  DateTime?    @map("next_activity") @db.Timestamptz(6)
+  status        String       @default("red")
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  company       Company?     @relation(fields: [companyId], references: [id])
+  activities    Activity[]
+  weeklyLeads   WeeklyLead[]
+
+  @@map("contacts")
 }
 
 model Activity {
-  id          String   @id @default(uuid())
-  contact_id  String
-  contact     Contact  @relation(fields: [contact_id], references: [id])
-  type        String   // call, meeting, email, linkedin
-  notes       String?
-  timestamp   DateTime @default(now())
-  outcome     String?
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  contactId String   @map("contact_id") @db.Uuid
+  type      String
+  notes     String?
+  timestamp DateTime @default(now()) @db.Timestamptz(6)
+  outcome   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  contact   Contact  @relation(fields: [contactId], references: [id])
+
+  @@map("activities")
 }
 
 model NewsItem {
-  id           String   @id @default(uuid())
-  company_id   String
-  company      Company  @relation(fields: [company_id], references: [id])
-  title        String
-  url          String
-  source       String
-  news_type    String   // layoff, order, media, recruitment
-  published_at DateTime
-  created_at   DateTime @default(now())
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  companyId   String   @map("company_id") @db.Uuid
+  title       String
+  url         String
+  source      String?
+  newsType    String?  @map("news_type")
+  publishedAt DateTime @map("published_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, url])
+  @@map("news_items")
 }
 
 model WeeklyLead {
-  id          String   @id @default(uuid())
-  contact_id  String?
-  company_id  String?
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  contactId   String?  @map("contact_id") @db.Uuid
+  companyId   String?  @map("company_id") @db.Uuid
   reason      String
   pitch       String
-  generated_at DateTime @default(now())
+  generatedAt DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@map("weekly_leads")
 }

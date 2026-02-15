@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 
@@ -11,16 +11,32 @@ export default function NewContact({ session }) {
   const [companyId, setCompanyId] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingCompanies, setLoadingCompanies] = useState(true)
   const [companies, setCompanies] = useState([])
 
-  // Load companies on mount
-  useState(() => {
-    const load = async () => {
-      const { data } = await supabase.from('companies').select('id, name')
-      setCompanies(data || [])
+  useEffect(() => {
+    if (!session) {
+      router.push('/')
+      return
     }
-    load()
-  })
+
+    const loadCompanies = async () => {
+      const { data, error: companiesError } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('user_id', session.user.id)
+        .order('name')
+
+      if (companiesError) {
+        setError(companiesError.message)
+      } else {
+        setCompanies(data || [])
+      }
+      setLoadingCompanies(false)
+    }
+
+    loadCompanies()
+  }, [router, session])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,7 +51,6 @@ export default function NewContact({ session }) {
         linkedin_url: linkedin,
         company_id: companyId || null,
         last_touchpoint: new Date().toISOString(),
-        status: 'yellow', // new contact defaults to recent
       })
       if (error) throw error
       router.push('/contacts')
@@ -47,7 +62,6 @@ export default function NewContact({ session }) {
   }
 
   if (!session) {
-    router.push('/')
     return null
   }
 
@@ -117,6 +131,7 @@ export default function NewContact({ session }) {
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Saving...' : 'Create Contact'}
           </button>
+          {loadingCompanies && <p className="text-sm text-gray-500">Loading companies...</p>}
         </form>
       </main>
     </div>

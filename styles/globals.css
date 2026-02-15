@@ -4,17 +4,17 @@
 
 /* Status color classes */
 .status-green {
-  background-color: #10b981;
+  background-color: #ecfdf5;
   border-left: 4px solid #10b981;
 }
 
 .status-yellow {
-  background-color: #f59e0b;
+  background-color: #fffbeb;
   border-left: 4px solid #f59e0b;
 }
 
 .status-red {
-  background-color: #ef4444;
+  background-color: #fef2f2;
   border-left: 4px solid #ef4444;
 }
 /* General styles */

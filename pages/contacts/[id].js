@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import Link from 'next/link'
+import { computeContactStatus, statusLabel } from '../../lib/contactStatus'
 
 export default function EditContact({ session }) {
   const router = useRouter()
   const { id } = router.query
   const [loading, setLoading] = useState(true)
-  const [contact, setContact] = useState({})
+  const [error, setError] = useState('')
   const [companies, setCompanies] = useState([])
+  const [computedStatus, setComputedStatus] = useState('red')
 
   // Activity state
   const [activities, setActivities] = useState([])
@@ -20,7 +21,6 @@ export default function EditContact({ session }) {
   const [phone, setPhone] = useState('')
   const [linkedin, setLinkedin] = useState('')
   const [companyId, setCompanyId] = useState('')
-  const [status, setStatus] = useState('yellow')
 
   useEffect(() => {
     if (!session) {
@@ -30,19 +30,33 @@ export default function EditContact({ session }) {
     if (!id) return
     // Load contact, companies, activities
     const fetchAll = async () => {
-      const [{ data: contactData }, { data: companiesData }, { data: activityData }] = await Promise.all([
-        supabase.from('contacts').select('*').eq('id', id).single(),
-        supabase.from('companies').select('id, name'),
-        supabase.from('activities').select('*, contacts(*)').eq('contact_id', id).order('timestamp', { ascending: false }),
+      setLoading(true)
+      setError('')
+
+      const [{ data: contactData, error: contactError }, { data: companiesData, error: companiesError }, { data: activityData, error: activityError }] = await Promise.all([
+        supabase.from('contacts').select('*').eq('id', id).eq('user_id', session.user.id).single(),
+        supabase.from('companies').select('id, name').eq('user_id', session.user.id).order('name'),
+        supabase
+          .from('activities')
+          .select('*')
+          .eq('contact_id', id)
+          .eq('user_id', session.user.id)
+          .order('timestamp', { ascending: false }),
       ])
+
+      if (contactError || companiesError || activityError) {
+        setError(contactError?.message || companiesError?.message || activityError?.message || 'Failed to load contact')
+        setLoading(false)
+        return
+      }
+
       if (contactData) {
-        setContact(contactData)
         setName(contactData.name || '')
         setEmail(contactData.email || '')
         setPhone(contactData.phone || '')
         setLinkedin(contactData.linkedin_url || '')
         setCompanyId(contactData.company_id || '')
-        setStatus(contactData.status || 'yellow')
+        setComputedStatus(computeContactStatus(contactData))
       }
       setCompanies(companiesData || [])
       setActivities(activityData || [])
@@ -53,35 +67,76 @@ export default function EditContact({ session }) {
 
   const handleSave = async () => {
     setLoading(true)
+    setError('')
     const updates = {
       name,
       email: email || null,
       phone: phone || null,
       linkedin_url: linkedin || null,
       company_id: companyId || null,
-      status,
     }
-    await supabase.from('contacts').update(updates).eq('id', id)
+    const { error: updateError } = await supabase
+      .from('contacts')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+
+    if (updateError) {
+      setError(updateError.message)
+      setLoading(false)
+      return
+    }
+
     router.push('/contacts')
   }
 
   const handleDelete = async () => {
     if (!confirm('Delete this contact?')) return
-    await supabase.from('contacts').delete().eq('id', id)
+    const { error: deleteError } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+
     router.push('/contacts')
   }
 
   const handleAddActivity = async (e) => {
     e.preventDefault()
+    setError('')
+
     const payload = {
+      user_id: session.user.id,
       contact_id: id,
       type: newActivity.type,
       notes: newActivity.notes,
       timestamp: new Date().toISOString(),
     }
-    await supabase.from('activities').insert(payload)
+    const { error: insertError } = await supabase.from('activities').insert(payload)
+
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+
     // Refresh activities list
-    const { data } = await supabase.from('activities').select('*, contacts(*)').eq('contact_id', id).order('timestamp', { ascending: false })
+    const { data, error: refreshError } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('contact_id', id)
+      .eq('user_id', session.user.id)
+      .order('timestamp', { ascending: false })
+
+    if (refreshError) {
+      setError(refreshError.message)
+      return
+    }
+
     setActivities(data || [])
     setNewActivity({ type: 'call', notes: '' })
   }
@@ -99,10 +154,11 @@ export default function EditContact({ session }) {
       </nav>
 
       <main className="max-w-2xl mx-auto py-8">
-        {/* Contact form */}
-        <div className="card p-6 space-y-4 mb-8">
-          <div>
-            <label className="block font-medium mb-1">Name</label>
+      {/* Contact form */}
+      <div className="card p-6 space-y-4 mb-8">
+        {error && <p className="text-red-600">{error}</p>}
+        <div>
+          <label className="block font-medium mb-1">Name</label>
             <input value={name} onChange={e => setName(e.target.value)} className="input-field" />
           </div>
           <div>
@@ -124,14 +180,10 @@ export default function EditContact({ session }) {
               {companies.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           </div>
-          <div>
-            <label className="block font-medium mb-1">Status</label>
-            <select value={status} onChange={e => setStatus(e.target.value)} className="input-field">
-              <option value="green">🟢 Active</option>
-              <option value="yellow">🟡 Recent</option>
-              <option value="red">🔴 Needs Attention</option>
-            </select>
-          </div>
+        <div>
+          <label className="block font-medium mb-1">Status (auto-calculated)</label>
+          <p className="input-field bg-gray-50">{statusLabel(computedStatus)}</p>
+        </div>
           <div className="flex justify-between pt-4">
             <button onClick={handleDelete} className="text-red-600 hover:underline">Delete</button>
             <button onClick={handleSave} className="btn-primary">Save</button>

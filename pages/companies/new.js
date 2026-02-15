@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 
@@ -11,10 +11,11 @@ export default function NewCompany({ session }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (!session) {
-    router.push('/')
-    return null
-  }
+  useEffect(() => {
+    if (!session) {
+      router.push('/')
+    }
+  }, [router, session])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -22,6 +23,7 @@ export default function NewCompany({ session }) {
     setError('')
     try {
       const { error } = await supabase.from('companies').insert({
+        user_id: session.user.id,
         name,
         industry: industry || null,
         website: website || null,
@@ -35,6 +37,8 @@ export default function NewCompany({ session }) {
       setLoading(false)
     }
   }
+
+  if (!session) return null
 
   return (
     <div className="min-h-screen bg-gray-50">

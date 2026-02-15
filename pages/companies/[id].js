@@ -10,6 +10,7 @@ export default function EditCompany({ session }) {
   const [website, setWebsite] = useState('')
   const [keywords, setKeywords] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!session) {
@@ -21,7 +22,19 @@ export default function EditCompany({ session }) {
   }, [session, id, router])
 
   const fetchCompany = async () => {
-    const { data } = await supabase.from('companies').select('*').eq('id', id).single()
+    const { data, error: fetchError } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (fetchError) {
+      setError(fetchError.message)
+      setLoading(false)
+      return
+    }
+
     if (data) {
       setName(data.name)
       setIndustry(data.industry || '')
@@ -33,19 +46,41 @@ export default function EditCompany({ session }) {
 
   const handleSave = async () => {
     setLoading(true)
+    setError('')
     const updates = {
       name,
       industry: industry || null,
       website: website || null,
       news_keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
     }
-    await supabase.from('companies').update(updates).eq('id', id)
+    const { error: updateError } = await supabase
+      .from('companies')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+
+    if (updateError) {
+      setError(updateError.message)
+      setLoading(false)
+      return
+    }
+
     router.push('/companies')
   }
 
   const handleDelete = async () => {
     if (!confirm('Delete this company?')) return
-    await supabase.from('companies').delete().eq('id', id)
+    const { error: deleteError } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+
     router.push('/companies')
   }
 
@@ -61,6 +96,7 @@ export default function EditCompany({ session }) {
       </nav>
       <main className="max-w-2xl mx-auto py-8">
         <div className="card p-6 space-y-4">
+          {error && <p className="text-red-600">{error}</p>}
           <div>
             <label className="block font-medium mb-1">Name</label>
             <input value={name} onChange={e => setName(e.target.value)} className="input-field" />

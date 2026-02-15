@@ -7,7 +7,7 @@
    ```
 2. **Create environment file**
    ```bash
-   cp .env.example .env
+   cp .env.example .env.local
    ```
    Fill in the values:
    - `NEXT_PUBLIC_SUPABASE_URL` – your Supabase project URL
@@ -16,8 +16,12 @@
    - `OPENAI_API_KEY` – for the weekly AI lead generator
    - `NEWSAPI_KEY` – to fetch company news
    - `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID` – for notifications
-   - `DATABASE_URL` – Supabase Postgres connection string (Prisma)
-3. **Run the development server**
+   - `DATABASE_URL` – Supabase Postgres **Session Pooler (IPv4)** connection string
+3. **Initialize database schema**
+   ```bash
+   npm run db:init
+   ```
+4. **Run the development server**
    ```bash
    npm run dev
    ```
@@ -34,7 +38,7 @@
   - `/companies` – list & manage companies
   - `/companies/new` – create a company
   - `/leads` – weekly AI‑generated leads
-- **Prisma schema** (`prisma/schema.prisma`) – can be used to generate migrations in Supabase.
+- **Supabase SQL bootstrap** (`supabase/schema.sql`) – canonical schema + RLS policies for all app tables.
 - **AI Lead Generator** (placeholder – you can call the OpenAI API from an edge function or Cron job to fill `weekly_leads` table).
 - **Tailwind** – ready‑to‑use utility classes. The colour‑coding for contact status is implemented in `styles/globals.css`.
 
