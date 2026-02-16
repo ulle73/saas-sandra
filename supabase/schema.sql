@@ -92,6 +92,50 @@ create table if not exists public.weekly_leads (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.lead_discovery_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  company_name text not null,
+  company_domain text,
+  employee_count_estimate integer,
+  growth_signal text,
+  recommended_person_title text,
+  reason text not null,
+  pitch text not null,
+  score integer not null default 50 check (score >= 1 and score <= 100),
+  source_title text not null,
+  source_url text not null,
+  source_published_at timestamptz,
+  status text not null default 'new' check (status in ('new', 'accepted', 'rejected', 'converted')),
+  reviewed_at timestamptz,
+  converted_company_id uuid references public.companies (id) on delete set null,
+  converted_contact_id uuid references public.contacts (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, company_name, source_url)
+);
+
+alter table public.lead_discovery_items
+  add column if not exists company_domain text;
+
+alter table public.lead_discovery_items
+  add column if not exists employee_count_estimate integer;
+
+alter table public.lead_discovery_items
+  add column if not exists growth_signal text;
+
+alter table public.lead_discovery_items
+  add column if not exists recommended_person_title text;
+
+alter table public.lead_discovery_items
+  add column if not exists reviewed_at timestamptz;
+
+alter table public.lead_discovery_items
+  add column if not exists converted_company_id uuid references public.companies (id) on delete set null;
+
+alter table public.lead_discovery_items
+  add column if not exists converted_contact_id uuid references public.contacts (id) on delete set null;
+
 alter table public.weekly_leads
   add column if not exists prospect_company text;
 
@@ -132,6 +176,10 @@ create index if not exists idx_weekly_leads_user_id on public.weekly_leads (user
 create index if not exists idx_weekly_leads_generated_at on public.weekly_leads (generated_at desc);
 create index if not exists idx_weekly_leads_new_prospect on public.weekly_leads (is_new_prospect);
 create index if not exists idx_weekly_leads_source_url on public.weekly_leads (source_url);
+create index if not exists idx_lead_discovery_user_id on public.lead_discovery_items (user_id);
+create index if not exists idx_lead_discovery_status on public.lead_discovery_items (status);
+create index if not exists idx_lead_discovery_score on public.lead_discovery_items (score desc);
+create index if not exists idx_lead_discovery_created_at on public.lead_discovery_items (created_at desc);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -152,6 +200,12 @@ execute function public.set_updated_at();
 drop trigger if exists trg_contacts_updated_at on public.contacts;
 create trigger trg_contacts_updated_at
 before update on public.contacts
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists trg_lead_discovery_updated_at on public.lead_discovery_items;
+create trigger trg_lead_discovery_updated_at
+before update on public.lead_discovery_items
 for each row
 execute function public.set_updated_at();
 
@@ -256,6 +310,7 @@ alter table public.contacts enable row level security;
 alter table public.activities enable row level security;
 alter table public.news_items enable row level security;
 alter table public.weekly_leads enable row level security;
+alter table public.lead_discovery_items enable row level security;
 
 drop policy if exists companies_select_own on public.companies;
 drop policy if exists companies_insert_own on public.companies;
@@ -325,6 +380,20 @@ for insert with check (auth.uid() = user_id);
 create policy weekly_leads_update_own on public.weekly_leads
 for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy weekly_leads_delete_own on public.weekly_leads
+for delete using (auth.uid() = user_id);
+
+drop policy if exists lead_discovery_select_own on public.lead_discovery_items;
+drop policy if exists lead_discovery_insert_own on public.lead_discovery_items;
+drop policy if exists lead_discovery_update_own on public.lead_discovery_items;
+drop policy if exists lead_discovery_delete_own on public.lead_discovery_items;
+
+create policy lead_discovery_select_own on public.lead_discovery_items
+for select using (auth.uid() = user_id);
+create policy lead_discovery_insert_own on public.lead_discovery_items
+for insert with check (auth.uid() = user_id);
+create policy lead_discovery_update_own on public.lead_discovery_items
+for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy lead_discovery_delete_own on public.lead_discovery_items
 for delete using (auth.uid() = user_id);
 
 commit;

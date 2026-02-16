@@ -16,7 +16,9 @@
    - `OPENAI_API_KEY` – for the weekly AI lead generator
    - `NEWSAPI_KEY` – to fetch company news
    - `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID` – for notifications
-   - `OUTLOOK_*` vars – optional read‑only Outlook calendar sync on dashboard
+  - `OUTLOOK_*` vars – optional read‑only Outlook calendar sync on dashboard
+    - For personal Microsoft accounts (Hotmail/Outlook.com), set `OUTLOOK_TENANT_ID=common`
+    - For Entra work/school accounts, use your tenant GUID
    - `DATABASE_URL` – Supabase Postgres **Session Pooler (IPv4)** connection string
 3. **Initialize database schema**
    ```bash
@@ -38,7 +40,7 @@
   - `/contacts/new` – create a contact
   - `/companies` – list & manage companies
   - `/companies/new` – create a company
-  - `/leads` – weekly AI‑generated leads (new potential customers)
+  - `/leads` – AI Lead Discovery (new potential customers only)
 - **Supabase SQL bootstrap** (`supabase/schema.sql`) – canonical schema + RLS policies for all app tables.
 - **AI Lead Generator** (placeholder – you can call the OpenAI API from an edge function or Cron job to fill `weekly_leads` table).
 - **Tailwind** – ready‑to‑use utility classes. The colour‑coding for contact status is implemented in `styles/globals.css`.
@@ -46,11 +48,13 @@
 ## 🛠️ Development notes
 - **Authentication** – uses Supabase Auth (email/password). After login the session is stored client‑side and passed as a prop to pages.
 - **Row‑Level Security** – create RLS policies in Supabase so each user can only see his own `contacts`, `companies`, `activities`.
-- **AI lead generation** – `npm run leads:generate` now runs discovery mode:
-  - fetches recent Swedish business signal articles via NewsAPI
+- **AI lead generation** – `npm run leads:generate` runs discovery mode:
+  - fetches recent Swedish growth/business signal articles via NewsAPI
   - extracts candidate companies with OpenAI
+  - applies criteria: likely growth, HR function, and employee estimate >= 150
   - excludes companies already in your CRM
-  - stores only new prospect leads in `weekly_leads`
+  - stores candidates in `lead_discovery_items` with status flow (`new`, `accepted`, `rejected`, `converted`)
+  - UI actions in `/leads`: open LinkedIn search, accept/reject, create company/contact draft
 - **Telegram notifications** – a simple server‑side function can read new `news_items` and push a message via the Bot API.
 - **Outlook read-only sync** – dashboard can show upcoming events via Microsoft Graph when Outlook env vars are configured.
 

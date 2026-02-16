@@ -27,6 +27,7 @@ model Company {
   contacts     Contact[]
   newsItems    NewsItem[]
   weeklyLeads  WeeklyLead[]
+  convertedDiscoveryItems LeadDiscoveryItem[] @relation("ConvertedCompany")
 
   @@map("companies")
 }
@@ -48,6 +49,7 @@ model Contact {
   company       Company?     @relation(fields: [companyId], references: [id])
   activities    Activity[]
   weeklyLeads   WeeklyLead[]
+  convertedDiscoveryItems LeadDiscoveryItem[] @relation("ConvertedContact")
 
   @@map("contacts")
 }
@@ -106,4 +108,31 @@ model WeeklyLead {
   company     Company? @relation(fields: [companyId], references: [id])
 
   @@map("weekly_leads")
+}
+
+model LeadDiscoveryItem {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  companyName          String   @map("company_name")
+  companyDomain        String?  @map("company_domain")
+  employeeCountEstimate Int?    @map("employee_count_estimate")
+  growthSignal         String?  @map("growth_signal")
+  recommendedPersonTitle String? @map("recommended_person_title")
+  reason               String
+  pitch                String
+  score                Int      @default(50)
+  sourceTitle          String   @map("source_title")
+  sourceUrl            String   @map("source_url")
+  sourcePublishedAt    DateTime? @map("source_published_at") @db.Timestamptz(6)
+  status               String   @default("new")
+  reviewedAt           DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  convertedCompanyId   String?  @map("converted_company_id") @db.Uuid
+  convertedContactId   String?  @map("converted_contact_id") @db.Uuid
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  convertedCompany     Company? @relation("ConvertedCompany", fields: [convertedCompanyId], references: [id])
+  convertedContact     Contact? @relation("ConvertedContact", fields: [convertedContactId], references: [id])
+
+  @@unique([userId, companyName, sourceUrl])
+  @@map("lead_discovery_items")
 }

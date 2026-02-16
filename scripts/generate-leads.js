@@ -11,15 +11,27 @@ const NEWSAPI_KEY = process.env.NEWSAPI_KEY
 
 const MAX_LEADS_PER_USER = parsePositiveInt(process.env.LEADS_MAX_PER_USER, 10, 1, 25)
 const LOOKBACK_DAYS = parsePositiveInt(process.env.LEADS_DISCOVERY_LOOKBACK_DAYS, 7, 1, 30)
-const MAX_SOURCE_ARTICLES = parsePositiveInt(process.env.LEADS_DISCOVERY_MAX_ARTICLES, 30, 5, 80)
+const MAX_SOURCE_ARTICLES = parsePositiveInt(process.env.LEADS_DISCOVERY_MAX_ARTICLES, 40, 10, 100)
 const OPENAI_MODEL = process.env.LEADS_DISCOVERY_MODEL || 'gpt-4o-mini'
 const LEADS_DEBUG = String(process.env.LEADS_DEBUG || 'false').toLowerCase() === 'true'
+const RECENT_DUPLICATE_WINDOW_DAYS = parsePositiveInt(process.env.LEADS_DISCOVERY_DUPLICATE_WINDOW_DAYS, 60, 14, 180)
 
 const DISCOVERY_QUERIES = [
-  '"stororder" OR "nytt avtal" OR upphandling OR partnerskap',
-  'expanderar OR etablerar OR investering OR tillvaxt',
-  'rekryterar OR anstaller OR varsel OR omstrukturering',
+  '"rekryterar" OR "anstaller" OR "Head of People" OR "HR-chef"',
+  '"expanderar" OR "vaxer" OR "nytt kontor" OR "investering"',
+  '"stororder" OR "nytt avtal" OR partnerskap OR upphandling',
 ]
+
+const ALLOWED_SIGNALS = new Set([
+  'hiring',
+  'expansion',
+  'order',
+  'partnership',
+  'public_procurement',
+  'investment',
+  'restructuring',
+  'media',
+])
 
 const COMPANY_SUFFIXES = new Set([
   'ab',
@@ -122,6 +134,26 @@ function sanitizeText(value, maxLen) {
     .slice(0, maxLen)
 }
 
+function parseCount(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return null
+  return Math.round(numeric)
+}
+
+function extractDomainFromCandidate(companyDomain, sourceUrl) {
+  const candidate = String(companyDomain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  if (candidate && candidate.includes('.')) {
+    return candidate.slice(0, 255)
+  }
+
+  try {
+    const host = new URL(sourceUrl).hostname.toLowerCase().replace(/^www\./, '')
+    return host.slice(0, 255)
+  } catch {
+    return null
+  }
+}
+
 async function fetchDiscoveryArticles() {
   const fromDate = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const collected = []
@@ -156,24 +188,30 @@ async function fetchDiscoveryArticles() {
 async function analyzeArticle(article) {
   const prompt = `
 Du ar en svensk B2B-sales analytiker.
-Analysera artikeln och avgor om den innehaller en konkret affarssignal for ett bolag som kan vara en ny potentiell kund.
+Malet ar att hitta NYA bolag med dessa kriterier:
+- bolaget ar i tillvaxt eller har tydlig affarssignal
+- bolaget ar sannolikt stort nog (minst 150 anstallda)
+- bolaget har sannolikt HR-funktion (HR-chef, Head of People, HR Business Partner eller liknande)
 
 Regler:
-- Om bolag inte namns tydligt: is_valid_lead=false
+- Om kriterierna inte uppfylls: is_valid_lead=false
 - reason och pitch maste vara pa svenska
 - reason max 140 tecken
 - pitch max 220 tecken
-- hall dig till vad som explicit star i title/description
-- signal maste vara en av: order,public_procurement,partnership,expansion,hiring,restructuring,media
+- Hall dig till explicit information i title/description, och markera osakerhet med lagre score
 
-Returnera ENDAST JSON med nycklar:
+Returnera ENDAST JSON:
 {
   "is_valid_lead": boolean,
   "company_name": string,
-  "signal": string,
+  "company_domain": string,
+  "employee_count_estimate": number,
+  "has_hr_function": boolean,
+  "is_growth_company": boolean,
+  "growth_signal": string,
+  "recommended_person_title": string,
   "reason": string,
   "pitch": string,
-  "contact_hint": string,
   "score": number
 }
 
@@ -199,30 +237,41 @@ url: ${article.url}
     return { candidate: null, rejectReason: 'ai_marked_not_valid' }
   }
 
-  if (!parsed.company_name) {
-    return { candidate: null, rejectReason: 'missing_company_name' }
-  }
-
-  const signal = sanitizeText(parsed.signal, 40)
-  const validSignals = new Set(['order', 'public_procurement', 'partnership', 'expansion', 'hiring', 'restructuring', 'media'])
+  const companyName = sanitizeText(parsed.company_name, 120)
   const reason = sanitizeText(parsed.reason, 140)
   const pitch = sanitizeText(parsed.pitch, 220)
-  const companyName = sanitizeText(parsed.company_name, 120)
-  const contactHint = sanitizeText(parsed.contact_hint, 80)
+  const recommendedPersonTitle = sanitizeText(parsed.recommended_person_title, 80)
+  const growthSignal = sanitizeText(parsed.growth_signal, 60)
+  const employeeCountEstimate = parseCount(parsed.employee_count_estimate)
+  const hasHrFunction = Boolean(parsed.has_hr_function)
+  const isGrowthCompany = Boolean(parsed.is_growth_company)
 
-  if (!companyName || !reason || !pitch) {
-    return { candidate: null, rejectReason: 'missing_required_fields' }
+  if (!companyName) return { candidate: null, rejectReason: 'missing_company_name' }
+  if (!reason || !pitch) return { candidate: null, rejectReason: 'missing_reason_or_pitch' }
+  if (!employeeCountEstimate || employeeCountEstimate < 150) {
+    return { candidate: null, rejectReason: 'employee_count_below_150' }
   }
+  if (!hasHrFunction) {
+    return { candidate: null, rejectReason: 'no_hr_function_signal' }
+  }
+  if (!isGrowthCompany) {
+    return { candidate: null, rejectReason: 'no_growth_signal' }
+  }
+
+  const signal = ALLOWED_SIGNALS.has(growthSignal) ? growthSignal : 'media'
+  const domain = extractDomainFromCandidate(parsed.company_domain, article.url)
 
   return {
     candidate: {
       companyName,
-      signal: validSignals.has(signal) ? signal : 'media',
+      companyDomain: domain,
+      employeeCountEstimate,
+      growthSignal: signal,
+      recommendedPersonTitle: recommendedPersonTitle || 'HR-chef / VD',
       reason,
       pitch,
-      contactHint: contactHint || null,
       score: clampScore(parsed.score),
-      sourceTitle: article.title,
+      sourceTitle: sanitizeText(article.title, 300),
       sourceUrl: article.url,
       sourcePublishedAt: article.publishedAt,
     },
@@ -242,7 +291,6 @@ async function extractCandidatesFromArticles(articles) {
         articleDecisions.push({
           title: article.title,
           url: article.url,
-          companyName: null,
           outcome: 'filtered',
           reason: analysis?.rejectReason || 'unknown_rejection',
         })
@@ -250,7 +298,6 @@ async function extractCandidatesFromArticles(articles) {
       }
 
       const candidate = analysis.candidate
-
       const key = normalizeCompanyName(candidate.companyName)
       if (!key) {
         articleDecisions.push({
@@ -304,7 +351,6 @@ async function extractCandidatesFromArticles(articles) {
       articleDecisions.push({
         title: article.title,
         url: article.url,
-        companyName: null,
         outcome: 'filtered',
         reason: 'ai_runtime_error',
       })
@@ -320,16 +366,17 @@ async function extractCandidatesFromArticles(articles) {
 }
 
 async function fetchUserIds() {
-  const [{ data: companies, error: companiesError }, { data: contacts, error: contactsError }] = await Promise.all([
+  const [{ data: companies, error: companiesError }, { data: contacts, error: contactsError }, { data: discovery, error: discoveryError }] = await Promise.all([
     supabase.from('companies').select('user_id'),
     supabase.from('contacts').select('user_id'),
+    supabase.from('lead_discovery_items').select('user_id'),
   ])
 
-  if (companiesError || contactsError) {
-    throw new Error(companiesError?.message || contactsError?.message || 'Failed to fetch user ids')
+  if (companiesError || contactsError || discoveryError) {
+    throw new Error(companiesError?.message || contactsError?.message || discoveryError?.message || 'Failed to fetch user ids')
   }
 
-  return [...new Set([...(companies || []), ...(contacts || [])].map((row) => row.user_id).filter(Boolean))]
+  return [...new Set([...(companies || []), ...(contacts || []), ...(discovery || [])].map((row) => row.user_id).filter(Boolean))]
 }
 
 async function fetchExistingCompanySet(userId) {
@@ -339,18 +386,16 @@ async function fetchExistingCompanySet(userId) {
     .eq('user_id', userId)
 
   if (error) throw error
-
   return new Set((data || []).map((item) => normalizeCompanyName(item.name)).filter(Boolean))
 }
 
-async function fetchRecentProspectSet(userId) {
-  const since = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
+async function fetchRecentDiscoverySet(userId) {
+  const since = new Date(Date.now() - RECENT_DUPLICATE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
-    .from('weekly_leads')
-    .select('prospect_company, source_url')
+    .from('lead_discovery_items')
+    .select('company_name, source_url')
     .eq('user_id', userId)
-    .eq('is_new_prospect', true)
-    .gte('generated_at', since)
+    .gte('created_at', since)
 
   if (error) throw error
 
@@ -358,7 +403,7 @@ async function fetchRecentProspectSet(userId) {
   const pairSet = new Set()
 
   for (const row of data || []) {
-    const normalizedCompany = normalizeCompanyName(row.prospect_company)
+    const normalizedCompany = normalizeCompanyName(row.company_name)
     if (normalizedCompany) companySet.add(normalizedCompany)
     if (normalizedCompany && row.source_url) {
       pairSet.add(`${normalizedCompany}|${row.source_url}`)
@@ -368,29 +413,27 @@ async function fetchRecentProspectSet(userId) {
   return { companySet, pairSet }
 }
 
-function buildLeadRow(userId, candidate) {
+function buildDiscoveryRow(userId, candidate) {
   return {
     user_id: userId,
-    contact_id: null,
-    company_id: null,
-    prospect_company: candidate.companyName,
-    prospect_person: candidate.contactHint,
-    prospect_email: null,
+    company_name: candidate.companyName,
+    company_domain: candidate.companyDomain,
+    employee_count_estimate: candidate.employeeCountEstimate,
+    growth_signal: candidate.growthSignal,
+    recommended_person_title: candidate.recommendedPersonTitle,
+    reason: candidate.reason,
+    pitch: candidate.pitch,
+    score: candidate.score,
     source_title: candidate.sourceTitle,
     source_url: candidate.sourceUrl,
     source_published_at: candidate.sourcePublishedAt,
-    source_signal: candidate.signal,
-    score: candidate.score,
-    is_new_prospect: true,
-    reason: candidate.reason,
-    pitch: candidate.pitch,
-    generated_at: new Date().toISOString(),
+    status: 'new',
   }
 }
 
 async function generateForUser(userId, candidates) {
   const existingCompanies = await fetchExistingCompanySet(userId)
-  const recentProspects = await fetchRecentProspectSet(userId)
+  const recentDiscovery = await fetchRecentDiscoverySet(userId)
 
   const rows = []
   const pickedCompanies = new Set()
@@ -402,59 +445,67 @@ async function generateForUser(userId, candidates) {
       candidateDecisions.push({ companyName: candidate.companyName, sourceUrl: candidate.sourceUrl, outcome: 'filtered', reason: 'invalid_normalized_company' })
       continue
     }
+
     if (isLikelyExistingCompany(normalizedCandidate, existingCompanies)) {
       candidateDecisions.push({ companyName: candidate.companyName, sourceUrl: candidate.sourceUrl, outcome: 'filtered', reason: 'already_in_crm' })
       continue
     }
-    if (recentProspects.companySet.has(normalizedCandidate)) {
+
+    if (recentDiscovery.companySet.has(normalizedCandidate)) {
       candidateDecisions.push({ companyName: candidate.companyName, sourceUrl: candidate.sourceUrl, outcome: 'filtered', reason: 'already_suggested_recently' })
       continue
     }
+
     if (pickedCompanies.has(normalizedCandidate)) {
       candidateDecisions.push({ companyName: candidate.companyName, sourceUrl: candidate.sourceUrl, outcome: 'filtered', reason: 'duplicate_in_same_run' })
       continue
     }
 
     const pairKey = `${normalizedCandidate}|${candidate.sourceUrl}`
-    if (recentProspects.pairSet.has(pairKey)) {
+    if (recentDiscovery.pairSet.has(pairKey)) {
       candidateDecisions.push({ companyName: candidate.companyName, sourceUrl: candidate.sourceUrl, outcome: 'filtered', reason: 'same_source_already_suggested' })
       continue
     }
 
-    rows.push(buildLeadRow(userId, candidate))
+    rows.push(buildDiscoveryRow(userId, candidate))
     pickedCompanies.add(normalizedCandidate)
     candidateDecisions.push({ companyName: candidate.companyName, sourceUrl: candidate.sourceUrl, outcome: 'selected', reason: 'passed_filters' })
 
     if (rows.length >= MAX_LEADS_PER_USER) break
   }
 
-  if (!rows.length) return { insertedCount: 0, candidateDecisions }
+  if (!rows.length) {
+    return { insertedCount: 0, candidateDecisions }
+  }
 
-  const { error } = await supabase.from('weekly_leads').insert(rows)
+  const { error } = await supabase
+    .from('lead_discovery_items')
+    .upsert(rows, { onConflict: 'user_id,company_name,source_url', ignoreDuplicates: true })
+
   if (error) throw error
   return { insertedCount: rows.length, candidateDecisions }
 }
 
-async function ensureProspectSchema() {
+async function ensureDiscoverySchema() {
   const { error } = await supabase
-    .from('weekly_leads')
-    .select('prospect_company, is_new_prospect, source_url')
+    .from('lead_discovery_items')
+    .select('company_name, status, source_url')
     .limit(1)
 
   if (error) {
     throw new Error(
-      'Database schema is outdated for AI lead discovery. Apply the latest supabase/schema.sql (weekly_leads prospect columns).'
+      'Database schema is outdated for AI lead discovery. Apply latest supabase/schema.sql (lead_discovery_items).'
     )
   }
 }
 
 async function main() {
-  console.log('Generating weekly AI leads from new prospects...')
-  await ensureProspectSchema()
+  console.log('Generating AI discovery leads (new potential customers only)...')
+  await ensureDiscoverySchema()
   const [userIds, articles] = await Promise.all([fetchUserIds(), fetchDiscoveryArticles()])
 
   if (!userIds.length) {
-    console.log('No users found with data.')
+    console.log('No users found with CRM data.')
     return
   }
 
@@ -476,7 +527,7 @@ async function main() {
   }
 
   if (!candidates.length) {
-    console.log('No valid new lead candidates extracted by AI.')
+    console.log('No valid candidates left after AI criteria filtering.')
     return
   }
 
@@ -486,7 +537,8 @@ async function main() {
       // eslint-disable-next-line no-await-in-loop
       const { insertedCount, candidateDecisions } = await generateForUser(userId, candidates)
       totalInserted += insertedCount
-      console.log(`User ${userId}: inserted ${insertedCount} new prospect leads`)
+      console.log(`User ${userId}: inserted ${insertedCount} discovery leads`)
+
       if (LEADS_DEBUG) {
         console.log(`[DEBUG] User ${userId} candidate decisions:`)
         for (const decision of candidateDecisions) {
@@ -498,7 +550,7 @@ async function main() {
     }
   }
 
-  console.log(`Lead generation done. New prospect leads inserted: ${totalInserted}`)
+  console.log(`Lead generation done. New discovery leads inserted: ${totalInserted}`)
 }
 
 main().catch((error) => {
