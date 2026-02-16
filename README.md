@@ -38,7 +38,7 @@
   - `/contacts/new` – create a contact
   - `/companies` – list & manage companies
   - `/companies/new` – create a company
-  - `/leads` – weekly AI‑generated leads
+  - `/leads` – weekly AI‑generated leads (new potential customers)
 - **Supabase SQL bootstrap** (`supabase/schema.sql`) – canonical schema + RLS policies for all app tables.
 - **AI Lead Generator** (placeholder – you can call the OpenAI API from an edge function or Cron job to fill `weekly_leads` table).
 - **Tailwind** – ready‑to‑use utility classes. The colour‑coding for contact status is implemented in `styles/globals.css`.
@@ -46,7 +46,11 @@
 ## 🛠️ Development notes
 - **Authentication** – uses Supabase Auth (email/password). After login the session is stored client‑side and passed as a prop to pages.
 - **Row‑Level Security** – create RLS policies in Supabase so each user can only see his own `contacts`, `companies`, `activities`.
-- **AI lead generation** – create a Supabase Edge Function that runs nightly, queries contacts & companies, calls OpenAI with the prompt from `PRD.md`, and inserts rows into `weekly_leads`.
+- **AI lead generation** – `npm run leads:generate` now runs discovery mode:
+  - fetches recent Swedish business signal articles via NewsAPI
+  - extracts candidate companies with OpenAI
+  - excludes companies already in your CRM
+  - stores only new prospect leads in `weekly_leads`
 - **Telegram notifications** – a simple server‑side function can read new `news_items` and push a message via the Bot API.
 - **Outlook read-only sync** – dashboard can show upcoming events via Microsoft Graph when Outlook env vars are configured.
 

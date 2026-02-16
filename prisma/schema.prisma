@@ -89,6 +89,15 @@ model WeeklyLead {
   userId      String   @map("user_id") @db.Uuid
   contactId   String?  @map("contact_id") @db.Uuid
   companyId   String?  @map("company_id") @db.Uuid
+  prospectCompany String? @map("prospect_company")
+  prospectPerson String? @map("prospect_person")
+  prospectEmail String? @map("prospect_email")
+  sourceTitle  String?  @map("source_title")
+  sourceUrl    String?  @map("source_url")
+  sourcePublishedAt DateTime? @map("source_published_at") @db.Timestamptz(6)
+  sourceSignal String?  @map("source_signal")
+  score       Int?
+  isNewProspect Boolean @default(false) @map("is_new_prospect")
   reason      String
   pitch       String
   generatedAt DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)

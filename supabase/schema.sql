@@ -77,11 +77,47 @@ create table if not exists public.weekly_leads (
   user_id uuid not null references auth.users (id) on delete cascade,
   contact_id uuid references public.contacts (id) on delete set null,
   company_id uuid references public.companies (id) on delete set null,
+  prospect_company text,
+  prospect_person text,
+  prospect_email text,
+  source_title text,
+  source_url text,
+  source_published_at timestamptz,
+  source_signal text,
+  score integer,
+  is_new_prospect boolean not null default false,
   reason text not null,
   pitch text not null,
   generated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+alter table public.weekly_leads
+  add column if not exists prospect_company text;
+
+alter table public.weekly_leads
+  add column if not exists prospect_person text;
+
+alter table public.weekly_leads
+  add column if not exists prospect_email text;
+
+alter table public.weekly_leads
+  add column if not exists source_title text;
+
+alter table public.weekly_leads
+  add column if not exists source_url text;
+
+alter table public.weekly_leads
+  add column if not exists source_published_at timestamptz;
+
+alter table public.weekly_leads
+  add column if not exists source_signal text;
+
+alter table public.weekly_leads
+  add column if not exists score integer;
+
+alter table public.weekly_leads
+  add column if not exists is_new_prospect boolean not null default false;
 
 create index if not exists idx_companies_user_id on public.companies (user_id);
 create index if not exists idx_contacts_user_id on public.contacts (user_id);
@@ -94,6 +130,8 @@ create index if not exists idx_news_items_company_id on public.news_items (compa
 create index if not exists idx_news_items_published_at on public.news_items (published_at desc);
 create index if not exists idx_weekly_leads_user_id on public.weekly_leads (user_id);
 create index if not exists idx_weekly_leads_generated_at on public.weekly_leads (generated_at desc);
+create index if not exists idx_weekly_leads_new_prospect on public.weekly_leads (is_new_prospect);
+create index if not exists idx_weekly_leads_source_url on public.weekly_leads (source_url);
 
 create or replace function public.set_updated_at()
 returns trigger
