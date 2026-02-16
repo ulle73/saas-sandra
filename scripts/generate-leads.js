@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { ensureEnvLoaded } from './load-env.js'
+import { fetchGoogleNewsRssArticlesByQuery } from '../lib/googleNewsRss.js'
 
 ensureEnvLoaded()
 
@@ -15,11 +16,18 @@ const MAX_SOURCE_ARTICLES = parsePositiveInt(process.env.LEADS_DISCOVERY_MAX_ART
 const OPENAI_MODEL = process.env.LEADS_DISCOVERY_MODEL || 'gpt-4o-mini'
 const LEADS_DEBUG = String(process.env.LEADS_DEBUG || 'false').toLowerCase() === 'true'
 const RECENT_DUPLICATE_WINDOW_DAYS = parsePositiveInt(process.env.LEADS_DISCOVERY_DUPLICATE_WINDOW_DAYS, 60, 14, 180)
+const DISCOVERY_GOOGLE_RSS_ENABLED = (process.env.LEADS_DISCOVERY_GOOGLE_RSS_ENABLED || 'true').toLowerCase() === 'true'
 
 const DISCOVERY_QUERIES = [
   '"rekryterar" OR "anstaller" OR "Head of People" OR "HR-chef"',
   '"expanderar" OR "vaxer" OR "nytt kontor" OR "investering"',
   '"stororder" OR "nytt avtal" OR partnerskap OR upphandling',
+]
+const DISCOVERY_RSS_QUERIES = [
+  '"rekryterar" OR "anställer" OR "head of people" OR "hr-chef"',
+  '"expanderar" OR "tillväxt" OR "nytt kontor" OR "investering"',
+  '"stororder" OR "nytt avtal" OR "partnerskap" OR "upphandling"',
+  '"150 anställda" OR "200 anställda" OR "300 anställda"',
 ]
 
 const ALLOWED_SIGNALS = new Set([
@@ -59,8 +67,8 @@ if (!OPENAI_API_KEY) {
   process.exit(1)
 }
 
-if (!NEWSAPI_KEY) {
-  console.error('Missing NEWSAPI_KEY')
+if (!NEWSAPI_KEY && !DISCOVERY_GOOGLE_RSS_ENABLED) {
+  console.error('Missing NEWSAPI_KEY and LEADS_DISCOVERY_GOOGLE_RSS_ENABLED=false. Need at least one source.')
   process.exit(1)
 }
 
@@ -158,20 +166,40 @@ async function fetchDiscoveryArticles() {
   const fromDate = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const collected = []
 
-  for (const query of DISCOVERY_QUERIES) {
-    const encodedQuery = encodeURIComponent(query)
-    const url = `https://newsapi.org/v2/everything?q=${encodedQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=sv&from=${fromDate}&sortBy=publishedAt&pageSize=${MAX_SOURCE_ARTICLES}`
-    // eslint-disable-next-line no-await-in-loop
-    const response = await fetch(url)
-    // eslint-disable-next-line no-await-in-loop
-    const payload = await response.json()
+  if (NEWSAPI_KEY) {
+    for (const query of DISCOVERY_QUERIES) {
+      const encodedQuery = encodeURIComponent(query)
+      const url = `https://newsapi.org/v2/everything?q=${encodedQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=sv&from=${fromDate}&sortBy=publishedAt&pageSize=${MAX_SOURCE_ARTICLES}`
+      // eslint-disable-next-line no-await-in-loop
+      const response = await fetch(url)
+      // eslint-disable-next-line no-await-in-loop
+      const payload = await response.json()
 
-    if (!response.ok) {
-      console.error(`NewsAPI error for query "${query}":`, payload.message || response.statusText)
-      continue
+      if (!response.ok) {
+        console.error(`NewsAPI error for query "${query}":`, payload.message || response.statusText)
+        continue
+      }
+
+      collected.push(...(payload.articles || []))
     }
+  }
 
-    collected.push(...(payload.articles || []))
+  if (DISCOVERY_GOOGLE_RSS_ENABLED) {
+    for (const query of DISCOVERY_RSS_QUERIES) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const rssArticles = await fetchGoogleNewsRssArticlesByQuery(query)
+        collected.push(...rssArticles.map((item) => ({
+          title: item.title,
+          url: item.url,
+          description: item.description || '',
+          source: { name: item.source || 'Google News RSS' },
+          publishedAt: item.publishedAt || new Date().toISOString(),
+        })))
+      } catch (rssError) {
+        console.error(`Google RSS error for query "${query}":`, rssError.message)
+      }
+    }
   }
 
   const byUrl = new Map()

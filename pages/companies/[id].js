@@ -9,7 +9,7 @@ import {
   buildGoogleNewsTestUrl,
 } from '../../lib/newsKeywords'
 
-export default function EditCompany({ session }) {
+export default function EditCompany({ session, theme, toggleTheme }) {
   const router = useRouter()
   const { id } = router.query
   const [name, setName] = useState('')
@@ -137,115 +137,190 @@ export default function EditCompany({ session }) {
     router.push('/companies')
   }
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-secondary">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-accent-soft border-t-accent-primary rounded-full animate-spin mb-4"></div>
+          <p className="text-secondary font-medium">Laddar företag...</p>
+        </div>
+      </div>
+    )
+  }
 
   const relevantCount = fetchedArticles.filter((article) => article.is_relevant).length
   const filteredOutCount = fetchedArticles.length - relevantCount
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow p-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold">🏢 Edit Company</h1>
-          <button onClick={() => router.back()} className="btn-secondary">Back</button>
-        </div>
-      </nav>
-      <main className="max-w-4xl mx-auto py-8">
-        <div className="card p-6 space-y-4">
-          {error && <p className="text-red-600">{error}</p>}
-          <div>
-            <label className="block font-medium mb-1">Name</label>
-            <input value={name} onChange={e => setName(e.target.value)} className="input-field" />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Industry</label>
-            <input value={industry} onChange={e => setIndustry(e.target.value)} className="input-field" />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Website</label>
-            <input value={website} onChange={e => setWebsite(e.target.value)} className="input-field" placeholder="https://..." />
-          </div>
-          <div>
-            <label className="block font-medium mb-2">Keyword Presets</label>
-            <div className="space-y-2">
-              {Object.values(KEYWORD_PRESETS).map((preset) => (
-                <label key={preset.id} className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedPresetIds.includes(preset.id)}
-                    onChange={() => togglePreset(preset.id)}
-                  />
-                  <span>
-                    <span className="font-medium">{preset.label}</span>
-                    <span className="text-sm text-gray-500 block">{preset.keywords.join(', ')}</span>
-                  </span>
-                </label>
-              ))}
+    <div className="min-h-screen bg-secondary text-primary transition-colors duration-200">
+      {/* Navigation */}
+      <nav className="nav-header">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🔐</span>
+                <h1 className="text-xl font-bold tracking-tight text-primary">Lösen</h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={toggleTheme} 
+                className="p-2 rounded-full hover:bg-secondary transition-all text-secondary"
+              >
+                {theme === 'light' ? '🌙' : '☀️'}
+              </button>
+              <button onClick={() => router.back()} className="text-sm font-bold text-secondary hover:text-primary transition-all">Gå tillbaka</button>
             </div>
           </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
-            <label className="block font-medium mb-1">Custom Keywords (comma separated)</label>
-            <input
-              value={customKeywordsInput}
-              onChange={e => setCustomKeywordsInput(e.target.value)}
-              className="input-field"
-              placeholder="t.ex. upphandling, expansion, kundcase"
-            />
+            <h2 className="text-3xl font-black text-primary tracking-tight">{name}</h2>
+            <p className="text-secondary mt-1">Hantera bevakningsprofil och se insamlade signaler.</p>
           </div>
-          <div className="bg-gray-50 border rounded p-3 space-y-2">
-            <p className="text-sm font-medium">Preview keywords:</p>
-            <p className="text-sm text-gray-600">{previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
-            <p className="text-sm font-medium">Google Alerts query:</p>
-            <p className="text-sm text-gray-700 break-all">{googleQuery}</p>
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-              Test in Google News
-            </a>
-          </div>
-          <div className="flex justify-between pt-4">
-            <button onClick={handleDelete} className="text-red-600 hover:underline">Delete</button>
-            <button onClick={handleSave} className="btn-primary">Save</button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleDelete} 
+              className="px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-all"
+            >
+              Radera företag
+            </button>
+            <button 
+              onClick={handleSave} 
+              className="btn-primary px-8 py-2.5 text-xs font-black uppercase tracking-widest shadow-lg hover:shadow-accent-soft transition-all"
+            >
+              Spara ändringar
+            </button>
           </div>
         </div>
-        <div className="card p-6 mt-6">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-semibold">Fetched Articles (All)</h2>
-            <p className="text-sm text-gray-500">
-              Total: {fetchedArticles.length} | Relevant: {relevantCount} | Filtered out: {filteredOutCount}
-            </p>
-          </div>
-          {fetchedArticles.length === 0 ? (
-            <p className="text-gray-500">No fetched articles yet for this company.</p>
-          ) : (
-            <ul className="space-y-3">
-              {fetchedArticles.map((article) => (
-                <li key={article.id} className="border rounded p-3">
-                  <div className="flex gap-2 items-center mb-1">
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        article.is_relevant ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {article.is_relevant ? 'relevant' : 'filtered'}
-                    </span>
-                    <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700">
-                      {article.news_type || 'media'}
-                    </span>
-                    {article.matched_keyword && (
-                      <span className="text-xs px-2 py-1 rounded bg-yellow-50 text-yellow-700">
-                        keyword: {article.matched_keyword}
-                      </span>
-                    )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Settings Section */}
+          <div className="lg:col-span-12 space-y-8">
+            <div className="card p-8 border-color shadow-sm">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2">
+                    <span>🏢</span> Grunduppgifter
+                  </h3>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Företagsnamn</label>
+                    <input value={name} onChange={e => setName(e.target.value)} className="input-field" />
                   </div>
-                  <a href={article.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">
-                    {article.title}
-                  </a>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {article.source || 'Unknown source'} · {new Date(article.published_at).toLocaleString()}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Bransch</label>
+                    <input value={industry} onChange={e => setIndustry(e.target.value)} className="input-field" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Webbplats</label>
+                    <input value={website} onChange={e => setWebsite(e.target.value)} className="input-field" />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2">
+                    <span>📡</span> Bevakningsprofil
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {Object.values(KEYWORD_PRESETS).map((preset) => (
+                      <label 
+                        key={preset.id} 
+                        className={`flex flex-col p-3 rounded-lg border transition-all cursor-pointer ${
+                          selectedPresetIds.includes(preset.id) 
+                            ? 'border-accent-primary bg-accent-soft bg-opacity-10' 
+                            : 'border-color bg-secondary hover:border-accent-primary hover:border-opacity-30'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between pointer-events-none">
+                          <span className="text-[10px] font-bold text-primary">{preset.label}</span>
+                          <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={selectedPresetIds.includes(preset.id)}
+                            readOnly
+                          />
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => togglePreset(preset.id)}
+                          className="absolute inset-0 z-0 opacity-0 cursor-pointer"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Egna Sökord</label>
+                    <input value={customKeywordsInput} onChange={e => setCustomKeywordsInput(e.target.value)} className="input-field" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-12 p-6 bg-secondary border border-color rounded-2xl">
+                <div className="flex flex-col md:flex-row justify-between gap-6">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted">Aktiv Query (Google Alerts)</p>
+                    <code className="text-[10px] text-accent-primary font-mono break-all">{googleQuery}</code>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-primary border border-color rounded-xl text-[10px] font-black uppercase tracking-widest text-secondary hover:text-primary transition-all">
+                      Testa Live ↗
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* News Section */}
+            <div className="card border-color shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-color bg-secondary bg-opacity-30 flex justify-between items-center">
+                <h3 className="text-sm font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                  <span>📰</span> Insamlade Signaler ({fetchedArticles.length})
+                </h3>
+                <div className="flex items-center gap-4 text-[10px] font-bold">
+                  <span className="text-green-500">RELEVANT: {relevantCount}</span>
+                  <span className="text-muted">FILTERED: {filteredOutCount}</span>
+                </div>
+              </div>
+              
+              <div className="divide-y divide-color">
+                {fetchedArticles.length === 0 ? (
+                  <div className="p-12 text-center text-muted italic text-sm">
+                    Inga artiklar har samlats in ännu.
+                  </div>
+                ) : (
+                  <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+                    {fetchedArticles.map((article) => (
+                      <div key={article.id} className="p-6 hover:bg-secondary transition-colors">
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                            article.is_relevant ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {article.is_relevant ? 'RELEVANT-MATCH' : 'FILTERED-OFF'}
+                          </span>
+                          {article.matched_keyword && (
+                            <span className="px-2 py-0.5 bg-accent-soft text-accent-primary rounded text-[8px] font-black uppercase tracking-widest">
+                              Signal: {article.matched_keyword}
+                            </span>
+                          )}
+                          <span className="ml-auto text-[10px] text-muted font-bold">
+                            {new Date(article.published_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-lg font-bold text-primary hover:text-accent-primary leading-snug block mb-2 transition-colors">
+                          {article.title}
+                        </a>
+                        <p className="text-xs text-muted font-medium italic">Källa: {article.source || 'Okänd'}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

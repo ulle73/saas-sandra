@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { ensureEnvLoaded } from './load-env.js'
 import { buildKeywordsFromPresets } from '../lib/newsKeywords.js'
+import { fetchGoogleNewsRssArticlesByQuery } from '../lib/googleNewsRss.js'
 
 ensureEnvLoaded()
 
@@ -9,11 +10,12 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const NEWSAPI_KEY = process.env.NEWSAPI_KEY
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
-const DEFAULT_KEYWORDS = ['layoffs', 'varsel', 'order', 'new contract', 'marketing campaign']
+const DEFAULT_KEYWORDS = ['varsel', 'nedskärning', 'stororder', 'nytt avtal', 'upphandling', 'expanderar', 'rekryterar', 'kundcase']
 const NEWS_LANGUAGES = [
   'sv',
-  'en', // uncomment to include English results
+  // 'en', // uncomment to include English results
 ]
+const GOOGLE_NEWS_RSS_ENABLED = (process.env.GOOGLE_NEWS_RSS_ENABLED || 'true').toLowerCase() === 'true'
 const INCLUDE_MEDIA_MENTIONS = (process.env.NEWS_INCLUDE_MEDIA || 'true').toLowerCase() === 'true'
 const KEYWORD_ALIASES = {
   layoff: ['layoff', 'layoffs', 'laid off', 'varsel', 'sparkar', 'avskedar', 'nedskarning'],
@@ -33,8 +35,8 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1)
 }
 
-if (!NEWSAPI_KEY) {
-  console.error('Missing NEWSAPI_KEY')
+if (!NEWSAPI_KEY && !GOOGLE_NEWS_RSS_ENABLED) {
+  console.error('Missing NEWSAPI_KEY and GOOGLE_NEWS_RSS_ENABLED=false. Need at least one news source enabled.')
   process.exit(1)
 }
 
@@ -73,22 +75,42 @@ async function fetchArticles(companyName, keywords) {
   const fromDate = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
   const collected = []
 
-  for (const language of NEWS_LANGUAGES) {
-    const strictUrl = `https://newsapi.org/v2/everything?q=${strictQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=${language}&from=${fromDate}&sortBy=publishedAt&pageSize=20`
-    // eslint-disable-next-line no-await-in-loop
-    const strictResponse = await fetch(strictUrl)
-    // eslint-disable-next-line no-await-in-loop
-    const strictPayload = await strictResponse.json()
-    collected.push(...(strictPayload.articles || []))
+  if (NEWSAPI_KEY) {
+    for (const language of NEWS_LANGUAGES) {
+      const strictUrl = `https://newsapi.org/v2/everything?q=${strictQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=${language}&from=${fromDate}&sortBy=publishedAt&pageSize=20`
+      // eslint-disable-next-line no-await-in-loop
+      const strictResponse = await fetch(strictUrl)
+      // eslint-disable-next-line no-await-in-loop
+      const strictPayload = await strictResponse.json()
+      collected.push(...(strictPayload.articles || []))
 
-    // Fallback if strict search yields few/no hits in this language.
-    if ((strictPayload.articles || []).length < 3) {
-      const broadUrl = `https://newsapi.org/v2/everything?q=${broadQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=${language}&from=${fromDate}&sortBy=publishedAt&pageSize=30`
-      // eslint-disable-next-line no-await-in-loop
-      const broadResponse = await fetch(broadUrl)
-      // eslint-disable-next-line no-await-in-loop
-      const broadPayload = await broadResponse.json()
-      collected.push(...(broadPayload.articles || []))
+      // Fallback if strict search yields few/no hits in this language.
+      if ((strictPayload.articles || []).length < 3) {
+        const broadUrl = `https://newsapi.org/v2/everything?q=${broadQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=${language}&from=${fromDate}&sortBy=publishedAt&pageSize=30`
+        // eslint-disable-next-line no-await-in-loop
+        const broadResponse = await fetch(broadUrl)
+        // eslint-disable-next-line no-await-in-loop
+        const broadPayload = await broadResponse.json()
+        collected.push(...(broadPayload.articles || []))
+      }
+    }
+  }
+
+  if (GOOGLE_NEWS_RSS_ENABLED) {
+    const rssKeywords = keywords.slice(0, 8)
+    const keywordPart = rssKeywords.length ? `(${rssKeywords.map((keyword) => `"${keyword}"`).join(' OR ')})` : ''
+    const query = keywordPart ? `"${companyName}" ${keywordPart}` : `"${companyName}"`
+    try {
+      const rssArticles = await fetchGoogleNewsRssArticlesByQuery(query)
+      collected.push(...rssArticles.map((item) => ({
+        title: item.title,
+        url: item.url,
+        description: item.description || '',
+        source: { name: item.source || 'Google News RSS' },
+        publishedAt: item.publishedAt || new Date().toISOString(),
+      })))
+    } catch (rssError) {
+      console.error(`Google RSS fetch failed for ${companyName}:`, rssError.message)
     }
   }
 

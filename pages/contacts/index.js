@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
 import { computeContactStatus, statusLabel } from '../../lib/contactStatus'
 
-export default function Contacts({ session }) {
+export default function Contacts({ session, theme, toggleTheme }) {
   const router = useRouter()
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -79,113 +79,158 @@ export default function Contacts({ session }) {
   })
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-secondary">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-accent-soft border-t-accent-primary rounded-full animate-spin mb-4"></div>
+          <p className="text-secondary font-medium">Laddar kontakter...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-secondary text-primary transition-colors duration-200">
       {/* Navigation */}
-      <nav className="bg-white shadow">
+      <nav className="nav-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">🔐 Lösen</h1>
-              <div className="ml-8 flex space-x-4">
-                <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
-                <Link href="/contacts" className="text-blue-600 font-medium">Contacts</Link>
-                <Link href="/companies" className="text-gray-600 hover:text-gray-900">Companies</Link>
-                <Link href="/leads" className="text-gray-600 hover:text-gray-900">AI Leads</Link>
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🔐</span>
+                <h1 className="text-xl font-bold tracking-tight text-primary">Lösen</h1>
+              </div>
+              <div className="hidden md:flex items-center gap-1">
+                <Link href="/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-secondary transition-all">Dashboard</Link>
+                <Link href="/contacts" className="px-3 py-2 rounded-md text-sm font-medium bg-accent-soft text-accent-primary">Contacts</Link>
+                <Link href="/companies" className="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-secondary transition-all">Companies</Link>
+                <Link href="/leads" className="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-secondary transition-all">AI Leads</Link>
               </div>
             </div>
-            <div className="flex items-center">
-              <Link href="/contacts/new" className="btn-primary mr-4">+ Add Contact</Link>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={toggleTheme} 
+                className="p-2 rounded-full hover:bg-secondary transition-all text-secondary"
+              >
+                {theme === 'light' ? '🌙' : '☀️'}
+              </button>
+              <Link href="/contacts/new" className="btn-primary py-1.5 px-4 text-xs">+ Kontakt</Link>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">👥 Contacts ({filteredContacts.length})</h2>
+      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div>
+            <h2 className="text-3xl font-extrabold text-primary tracking-tight">Kontakter</h2>
+            <p className="text-secondary mt-1">Hantera dina kundrelationer och deras status.</p>
+          </div>
           
-          {/* Filters */}
-          <div className="flex space-x-4">
-            <input
-              type="text"
-              placeholder="Search contacts..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field w-64"
-            />
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">🔍</span>
+              <input
+                type="text"
+                placeholder="Sök namn, e-post..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input-field pl-9 w-64 text-sm"
+              />
+            </div>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="input-field w-40"
+              className="input-field w-40 text-sm"
             >
-              <option value="all">All Status</option>
-              <option value="green">🟢 Active</option>
-              <option value="yellow">🟡 Recent</option>
-              <option value="red">🔴 Needs Attention</option>
+              <option value="all">Alla Statusar</option>
+              <option value="green">🟢 Aktiv</option>
+              <option value="yellow">🟡 Nylig</option>
+              <option value="red">🔴 Attention</option>
             </select>
           </div>
         </div>
-        {error && <p className="text-red-600 mb-4">{error}</p>}
 
-        {/* Contacts Table */}
-        <div className="card overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="table-header">Name</th>
-                <th className="table-header">Company</th>
-                <th className="table-header">Email</th>
-                <th className="table-header">Last Contact</th>
-                <th className="table-header">Next Activity</th>
-                <th className="table-header">Status</th>
-                <th className="table-header">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredContacts.map(contact => (
-                <tr key={contact.id} className={getStatusClass(contact)}>
-                  <td className="table-cell font-medium">{contact.name}</td>
-                  <td className="table-cell">{contact.companies?.name || '-'}</td>
-                  <td className="table-cell">{contact.email || '-'}</td>
-                  <td className="table-cell">
-                    {contact.last_touchpoint 
-                      ? new Date(contact.last_touchpoint).toLocaleDateString()
-                      : '-'}
-                  </td>
-                  <td className="table-cell">
-                    {contact.next_activity 
-                      ? new Date(contact.next_activity).toLocaleDateString()
-                      : '-'}
-                  </td>
-                  <td className="table-cell">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium
-                      ${contact.status === 'green' ? 'bg-green-200 text-green-800' :
-                        contact.status === 'yellow' ? 'bg-yellow-200 text-yellow-800' :
-                        'bg-red-200 text-red-800'}`}>
-                      {statusLabel(contact.status)}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <Link href={`/contacts/${contact.id}`} className="text-blue-600 hover:underline mr-3">
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => deleteContact(contact.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900 dark:bg-opacity-20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400">
+            {error}
+          </div>
+        )}
+
+        <div className="card p-0 overflow-hidden border-color">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-color">
+              <thead>
+                <tr>
+                  <th className="table-header w-[25%] font-black">Namn</th>
+                  <th className="table-header w-[20%]">Företag</th>
+                  <th className="table-header w-[15%]">Senast</th>
+                  <th className="table-header w-[15%]">Nästa</th>
+                  <th className="table-header w-[15%]">Status</th>
+                  <th className="table-header w-[10%] text-right pr-6">Åtgärd</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-primary divide-y divide-color">
+                {filteredContacts.map(contact => (
+                  <tr key={contact.id} className="group hover:bg-secondary transition-colors">
+                    <td className="table-cell">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${
+                          contact.status === 'green' ? 'bg-status-green-border' :
+                          contact.status === 'yellow' ? 'bg-status-yellow-border' :
+                          'bg-status-red-border'
+                        }`}></div>
+                        <span className="font-bold text-primary">{contact.name}</span>
+                      </div>
+                      <div className="text-[10px] text-muted ml-5">{contact.email || 'Ingen e-post'}</div>
+                    </td>
+                    <td className="table-cell font-medium text-secondary">
+                      {contact.companies?.name || '-'}
+                    </td>
+                    <td className="table-cell text-sm text-secondary">
+                      {contact.last_touchpoint 
+                        ? new Date(contact.last_touchpoint).toLocaleDateString()
+                        : <span className="text-muted">Inget data</span>}
+                    </td>
+                    <td className="table-cell text-sm text-secondary">
+                      {contact.next_activity 
+                        ? <span className="font-semibold text-accent-primary">{new Date(contact.next_activity).toLocaleDateString()}</span>
+                        : '-'}
+                    </td>
+                    <td className="table-cell">
+                      <span className={`badge ${
+                        contact.status === 'green' ? 'badge-green' :
+                        contact.status === 'yellow' ? 'badge-yellow' :
+                        'badge-red'
+                      }`}>
+                        {statusLabel(contact.status)}
+                      </span>
+                    </td>
+                    <td className="table-cell text-right pr-6">
+                      <div className="flex items-center justify-end gap-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+                        <Link href={`/contacts/${contact.id}`} className="p-1 px-2 text-xs font-bold bg-accent-soft text-accent-primary rounded-md hover:bg-accent-primary hover:text-white transition-colors">
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => deleteContact(contact.id)}
+                          className="p-1 px-2 text-xs font-bold bg-red-50 text-red-600 rounded-md hover:bg-red-600 hover:text-white transition-colors"
+                        >
+                          Radera
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {filteredContacts.length === 0 && (
-            <p className="text-center py-8 text-gray-500">No contacts found</p>
+            <div className="py-20 text-center flex flex-col items-center">
+              <span className="text-5xl mb-4">📭</span>
+              <p className="text-secondary font-bold">Inga kontakter hittades</p>
+              <p className="text-muted text-xs mt-1">Försök ändra din sökning eller filter.</p>
+              <button onClick={() => {setSearchTerm(''); setFilterStatus('all');}} className="mt-4 text-accent-primary text-xs font-bold underline">Rensa filter</button>
+            </div>
           )}
         </div>
       </main>

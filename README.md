@@ -14,9 +14,11 @@
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` – public anon key
    - `SUPABASE_SERVICE_ROLE_KEY` – service role key (used for server‑side ops)
    - `OPENAI_API_KEY` – for the weekly AI lead generator
-   - `NEWSAPI_KEY` – to fetch company news
+   - `NEWSAPI_KEY` – to fetch company news (optional if Google RSS is enabled)
+   - `GOOGLE_NEWS_RSS_ENABLED` – enables Google News RSS as source for company news
+   - `LEADS_DISCOVERY_GOOGLE_RSS_ENABLED` – enables Google News RSS in lead discovery
    - `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID` – for notifications
-  - `OUTLOOK_*` vars – optional read‑only Outlook calendar sync on dashboard
+   - `OUTLOOK_*` vars – optional read‑only Outlook calendar sync on dashboard
     - For personal Microsoft accounts (Hotmail/Outlook.com), set `OUTLOOK_TENANT_ID=common`
     - For Entra work/school accounts, use your tenant GUID
    - `DATABASE_URL` – Supabase Postgres **Session Pooler (IPv4)** connection string
@@ -49,12 +51,13 @@
 - **Authentication** – uses Supabase Auth (email/password). After login the session is stored client‑side and passed as a prop to pages.
 - **Row‑Level Security** – create RLS policies in Supabase so each user can only see his own `contacts`, `companies`, `activities`.
 - **AI lead generation** – `npm run leads:generate` runs discovery mode:
-  - fetches recent Swedish growth/business signal articles via NewsAPI
+  - fetches recent Swedish growth/business signal articles via NewsAPI + Google News RSS
   - extracts candidate companies with OpenAI
   - applies criteria: likely growth, HR function, and employee estimate >= 150
   - excludes companies already in your CRM
   - stores candidates in `lead_discovery_items` with status flow (`new`, `accepted`, `rejected`, `converted`)
   - UI actions in `/leads`: open LinkedIn search, accept/reject, create company/contact draft
+- **Company news fetch** – `npm run news:fetch` now supports NewsAPI + Google News RSS hybrid for better coverage.
 - **Telegram notifications** – a simple server‑side function can read new `news_items` and push a message via the Bot API.
 - **Outlook read-only sync** – dashboard can show upcoming events via Microsoft Graph when Outlook env vars are configured.
 

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 function MyApp({ Component, pageProps }) {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [theme, setTheme] = useState('light')
 
   useEffect(() => {
     // Get initial session
@@ -18,16 +19,32 @@ function MyApp({ Component, pageProps }) {
       setSession(session)
     })
 
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light'
+    setTheme(savedTheme)
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark')
+
     return () => subscription.unsubscribe()
   }, [])
 
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    document.documentElement.classList.toggle('dark', newTheme === 'dark')
+  }
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-xl">Loading...</div>
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="text-xl dark:text-gray-100">Loading...</div>
     </div>
   }
 
-  return <Component {...pageProps} session={session} />
+  return (
+    <div className={theme}>
+      <Component {...pageProps} session={session} theme={theme} toggleTheme={toggleTheme} />
+    </div>
+  )
 }
 
 export default MyApp
