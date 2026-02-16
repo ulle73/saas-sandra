@@ -11,10 +11,18 @@ create table if not exists public.companies (
   name text not null,
   industry text,
   website text,
+  news_keyword_ids text[] not null default '{}',
+  news_custom_keywords text[] not null default '{}',
   news_keywords text[] not null default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.companies
+  add column if not exists news_keyword_ids text[] not null default '{}';
+
+alter table public.companies
+  add column if not exists news_custom_keywords text[] not null default '{}';
 
 create table if not exists public.contacts (
   id uuid primary key default gen_random_uuid(),
@@ -51,10 +59,18 @@ create table if not exists public.news_items (
   url text not null,
   source text,
   news_type text,
+  is_relevant boolean not null default true,
+  matched_keyword text,
   published_at timestamptz not null,
   created_at timestamptz not null default now(),
   unique (company_id, url)
 );
+
+alter table public.news_items
+  add column if not exists is_relevant boolean not null default true;
+
+alter table public.news_items
+  add column if not exists matched_keyword text;
 
 create table if not exists public.weekly_leads (
   id uuid primary key default gen_random_uuid(),

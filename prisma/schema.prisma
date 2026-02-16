@@ -19,6 +19,8 @@ model Company {
   name         String
   industry     String?
   website      String?
+  newsKeywordIds String[]  @map("news_keyword_ids")
+  newsCustomKeywords String[] @map("news_custom_keywords")
   newsKeywords String[]    @map("news_keywords")
   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -72,6 +74,8 @@ model NewsItem {
   url         String
   source      String?
   newsType    String?  @map("news_type")
+  isRelevant  Boolean  @default(true) @map("is_relevant")
+  matchedKeyword String? @map("matched_keyword")
   publishedAt DateTime @map("published_at") @db.Timestamptz(6)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   company     Company  @relation(fields: [companyId], references: [id])

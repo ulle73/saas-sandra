@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { ensureEnvLoaded } from './load-env.js'
+import { buildKeywordsFromPresets } from '../lib/newsKeywords.js'
 
 ensureEnvLoaded()
 
@@ -144,7 +145,7 @@ async function main() {
   console.log('Fetching company news...')
   const { data: companies, error } = await supabase
     .from('companies')
-    .select('id, user_id, name, news_keywords')
+    .select('id, user_id, name, news_keyword_ids, news_custom_keywords, news_keywords')
 
   if (error) {
     console.error('Could not fetch companies:', error.message)
@@ -154,18 +155,23 @@ async function main() {
   let insertedCount = 0
 
   for (const company of companies || []) {
-    const keywords = (company.news_keywords?.length ? company.news_keywords : DEFAULT_KEYWORDS).slice(0, 8)
+    const fallbackKeywords = company.news_keywords?.length ? company.news_keywords : DEFAULT_KEYWORDS
+    const keywords = buildKeywordsFromPresets(
+      company.news_keyword_ids,
+      company.news_custom_keywords,
+      10,
+      fallbackKeywords
+    )
     const keywordPatterns = expandKeywords(keywords)
     const articles = await fetchArticles(company.name, keywords)
 
     if (!articles.length) continue
 
-    const analyzed = articles
+    const allAnalyzed = articles
       .filter((article) => article?.title && article?.url && article?.publishedAt)
       .map((article) => ({ article, analysis: analyzeArticle(article, company.name, keywordPatterns) }))
-      .filter((item) => item.analysis.isMatch)
 
-    const rows = analyzed.map(({ article, analysis }) => {
+    const rows = allAnalyzed.map(({ article, analysis }) => {
         const combinedText = `${article.title}\n${article.description || ''}`
         return {
           user_id: company.user_id,
@@ -173,20 +179,22 @@ async function main() {
           title: article.title,
           url: article.url,
           source: article.source?.name || null,
+          is_relevant: analysis.isMatch,
+          matched_keyword: analysis.matchedKeyword,
           news_type: analysis.hasKeyword ? classifyNewsType(combinedText) : 'media',
           published_at: article.publishedAt,
         }
       })
 
     if (!rows.length) {
-      console.log(`${company.name}: 0 relevant hits after filtering (fetched ${articles.length})`)
+      console.log(`${company.name}: 0 fetched rows after validation (fetched ${articles.length})`)
       continue
     }
 
     const { data: upserted, error: upsertError } = await supabase
       .from('news_items')
       .upsert(rows, { onConflict: 'company_id,url' })
-      .select('title, news_type')
+      .select('title, news_type, is_relevant')
 
     if (upsertError) {
       console.error(`Failed storing news for ${company.name}:`, upsertError.message)
@@ -194,7 +202,13 @@ async function main() {
     }
 
     insertedCount += upserted.length
-    const important = upserted.filter((item) => item.news_type !== 'general').slice(0, 3)
+    const relevantCount = upserted.filter((item) => item.is_relevant).length
+    if (!relevantCount) {
+      console.log(`${company.name}: 0 relevant hits (stored ${upserted.length} fetched articles)`)
+      continue
+    }
+
+    const important = upserted.filter((item) => item.is_relevant).slice(0, 3)
     if (important.length) {
       const lines = important.map((item) => `- [${item.news_type}] ${item.title}`).join('\n')
       try {

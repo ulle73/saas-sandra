@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import {
+  KEYWORD_PRESETS,
+  parseCustomKeywords,
+  buildKeywordsFromPresets,
+  buildGoogleAlertsQuery,
+  buildGoogleNewsTestUrl,
+} from '../../lib/newsKeywords'
 
 export default function NewCompany({ session }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [industry, setIndustry] = useState('')
   const [website, setWebsite] = useState('')
-  const [keywords, setKeywords] = useState('') // comma separated list
+  const [selectedPresetIds, setSelectedPresetIds] = useState([])
+  const [customKeywordsInput, setCustomKeywordsInput] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -22,12 +30,17 @@ export default function NewCompany({ session }) {
     setLoading(true)
     setError('')
     try {
+      const customKeywords = parseCustomKeywords(customKeywordsInput)
+      const mergedKeywords = buildKeywordsFromPresets(selectedPresetIds, customKeywords, 10, [])
+
       const { error } = await supabase.from('companies').insert({
         user_id: session.user.id,
         name,
         industry: industry || null,
         website: website || null,
-        news_keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+        news_keyword_ids: selectedPresetIds,
+        news_custom_keywords: customKeywords,
+        news_keywords: mergedKeywords,
       })
       if (error) throw error
       router.push('/companies')
@@ -36,6 +49,20 @@ export default function NewCompany({ session }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const customKeywords = parseCustomKeywords(customKeywordsInput)
+  const previewKeywords = buildKeywordsFromPresets(selectedPresetIds, customKeywords, 10, [])
+  const googleQuery = buildGoogleAlertsQuery(name, previewKeywords)
+  const googleUrl = buildGoogleNewsTestUrl(googleQuery)
+
+  const togglePreset = (presetId) => {
+    setSelectedPresetIds((current) => {
+      if (current.includes(presetId)) {
+        return current.filter((id) => id !== presetId)
+      }
+      return [...current, presetId]
+    })
   }
 
   if (!session) return null
@@ -80,14 +107,41 @@ export default function NewCompany({ session }) {
             />
           </div>
           <div>
-            <label className="block font-medium mb-1">News Keywords (comma separated)</label>
+            <label className="block font-medium mb-2">Keyword Presets</label>
+            <div className="space-y-2">
+              {Object.values(KEYWORD_PRESETS).map((preset) => (
+                <label key={preset.id} className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedPresetIds.includes(preset.id)}
+                    onChange={() => togglePreset(preset.id)}
+                  />
+                  <span>
+                    <span className="font-medium">{preset.label}</span>
+                    <span className="text-sm text-gray-500 block">{preset.keywords.join(', ')}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Custom Keywords (comma separated)</label>
             <input
               type="text"
-              placeholder="e.g. layoff,order,acquisition"
-              value={keywords}
-              onChange={e => setKeywords(e.target.value)}
+              placeholder="t.ex. upphandling, expansion, kundcase"
+              value={customKeywordsInput}
+              onChange={e => setCustomKeywordsInput(e.target.value)}
               className="input-field"
             />
+          </div>
+          <div className="bg-gray-50 border rounded p-3 space-y-2">
+            <p className="text-sm font-medium">Preview keywords:</p>
+            <p className="text-sm text-gray-600">{previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
+            <p className="text-sm font-medium">Google Alerts query:</p>
+            <p className="text-sm text-gray-700 break-all">{googleQuery}</p>
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+              Test in Google News
+            </a>
           </div>
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Saving...' : 'Create Company'}

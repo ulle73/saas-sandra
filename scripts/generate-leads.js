@@ -38,7 +38,7 @@ async function recentCompanyNews(companyId) {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
     .from('news_items')
-    .select('title, news_type, published_at')
+    .select('title, url, source, news_type, published_at')
     .eq('company_id', companyId)
     .gte('published_at', since)
     .order('published_at', { ascending: false })
@@ -55,14 +55,22 @@ async function recentCompanyNews(companyId) {
 function buildPrompt(contact, status, news) {
   const companyName = contact.companies?.name || 'unknown company'
   const newsSummary = news.length
-    ? news.map((item) => `- ${item.title} (${item.news_type || 'general'})`).join('\n')
+    ? news
+        .map(
+          (item, index) =>
+            `${index + 1}. ${item.title} | type=${item.news_type || 'media'} | date=${new Date(item.published_at).toISOString()} | url=${item.url}`
+        )
+        .join('\n')
     : '- No relevant company news in the last 30 days.'
 
   return `
-You are a sales assistant. Return strict JSON with keys "reason" and "pitch".
+You are a sales assistant. Return strict JSON with keys "reason", "pitch", "citation_index".
 Constraints:
 - reason: max 120 characters
 - pitch: max 180 characters, direct and specific
+- citation_index: integer index that points to one of the listed articles (1-based)
+- Every claim in reason/pitch must be grounded in the cited article.
+- Do not infer layoffs/orders/etc unless explicitly present in the cited article.
 
 Contact:
 - name: ${contact.name}
@@ -80,14 +88,17 @@ Only return JSON, no markdown.
 function safeParseLead(content) {
   try {
     const parsed = JSON.parse(content)
+    const parsedIndex = Number(parsed.citation_index)
     return {
       reason: String(parsed.reason || 'Follow-up opportunity'),
       pitch: String(parsed.pitch || 'Quick intro and value proposition.'),
+      citationIndex: Number.isFinite(parsedIndex) ? parsedIndex : 1,
     }
   } catch {
     return {
       reason: 'Follow-up opportunity',
       pitch: content.slice(0, 180),
+      citationIndex: 1,
     }
   }
 }
@@ -95,6 +106,10 @@ function safeParseLead(content) {
 async function generateLead(contact) {
   const status = computeContactStatus(contact)
   const news = await recentCompanyNews(contact.company_id)
+  if (!news.length) {
+    return null
+  }
+
   const prompt = buildPrompt(contact, status, news)
 
   const completion = await openai.chat.completions.create({
@@ -105,12 +120,15 @@ async function generateLead(contact) {
 
   const content = completion.choices[0]?.message?.content?.trim() || ''
   const parsed = safeParseLead(content)
+  const citationPosition = Math.min(Math.max(parsed.citationIndex, 1), news.length) - 1
+  const citedArticle = news[citationPosition]
+  const sourceRef = `${citedArticle.title} (${citedArticle.url})`
 
   return {
     user_id: contact.user_id,
     contact_id: contact.id,
     company_id: contact.company_id || null,
-    reason: parsed.reason,
+    reason: `${parsed.reason} | Källa: ${sourceRef}`.slice(0, 900),
     pitch: parsed.pitch,
     generated_at: new Date().toISOString(),
   }
@@ -151,7 +169,9 @@ async function main() {
     for (const contact of userContacts) {
       try {
         const lead = await generateLead(contact)
-        leads.push(lead)
+        if (lead) {
+          leads.push(lead)
+        }
       } catch (err) {
         console.error(`Lead generation failed for contact ${contact.id}:`, err.message)
       }

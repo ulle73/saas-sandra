@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
+import {
+  buildKeywordsFromPresets,
+  buildGoogleAlertsQuery,
+  buildGoogleNewsTestUrl,
+} from '../../lib/newsKeywords'
 
 export default function Companies({ session }) {
   const router = useRouter()
@@ -67,21 +72,38 @@ export default function Companies({ session }) {
               <th className="px-4 py-2 text-left">Name</th>
               <th className="px-4 py-2 text-left">Industry</th>
               <th className="px-4 py-2 text-left">Website</th>
+              <th className="px-4 py-2 text-left">Google News Test</th>
               <th className="px-4 py-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {companies.map(c => (
-              <tr key={c.id} className="border-t">
-                <td className="px-4 py-2">{c.name}</td>
-                <td className="px-4 py-2">{c.industry || '-'}</td>
-                <td className="px-4 py-2"><a href={c.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{c.website}</a></td>
-                <td className="px-4 py-2 space-x-2">
+            {companies.map(c => {
+              const keywords = buildKeywordsFromPresets(
+                c.news_keyword_ids,
+                c.news_custom_keywords,
+                10,
+                c.news_keywords || []
+              )
+              const query = buildGoogleAlertsQuery(c.name, keywords)
+              const googleUrl = buildGoogleNewsTestUrl(query)
+
+              return (
+                <tr key={c.id} className="border-t">
+                  <td className="px-4 py-2">{c.name}</td>
+                  <td className="px-4 py-2">{c.industry || '-'}</td>
+                  <td className="px-4 py-2"><a href={c.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{c.website}</a></td>
+                  <td className="px-4 py-2">
+                    <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      Test query
+                    </a>
+                  </td>
+                  <td className="px-4 py-2 space-x-2">
                   <Link href={`/companies/${c.id}`} className="text-blue-600 hover:underline">Edit</Link>
                   <button onClick={() => deleteCompany(c.id)} className="text-red-600 hover:underline">Delete</button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         {companies.length === 0 && (
