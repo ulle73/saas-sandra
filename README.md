@@ -16,6 +16,7 @@
    - `OPENAI_API_KEY` – for the weekly AI lead generator
    - `NEWSAPI_KEY` – to fetch company news
    - `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID` – for notifications
+   - `OUTLOOK_*` vars – optional read‑only Outlook calendar sync on dashboard
    - `DATABASE_URL` – Supabase Postgres **Session Pooler (IPv4)** connection string
 3. **Initialize database schema**
    ```bash
@@ -47,6 +48,7 @@
 - **Row‑Level Security** – create RLS policies in Supabase so each user can only see his own `contacts`, `companies`, `activities`.
 - **AI lead generation** – create a Supabase Edge Function that runs nightly, queries contacts & companies, calls OpenAI with the prompt from `PRD.md`, and inserts rows into `weekly_leads`.
 - **Telegram notifications** – a simple server‑side function can read new `news_items` and push a message via the Bot API.
+- **Outlook read-only sync** – dashboard can show upcoming events via Microsoft Graph when Outlook env vars are configured.
 
 ## 📦 Deploy
 - Deploy the Next.js app on **Vercel** (connect the repo, set the same env vars).

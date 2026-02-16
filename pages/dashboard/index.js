@@ -8,6 +8,10 @@ export default function Dashboard({ session }) {
   const router = useRouter()
   const [stats, setStats] = useState({ green: 0, yellow: 0, red: 0, total: 0 })
   const [recentActivity, setRecentActivity] = useState([])
+  const [outlookEvents, setOutlookEvents] = useState([])
+  const [outlookEnabled, setOutlookEnabled] = useState(false)
+  const [outlookLoading, setOutlookLoading] = useState(true)
+  const [outlookError, setOutlookError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -17,6 +21,7 @@ export default function Dashboard({ session }) {
       return
     }
     fetchStats()
+    fetchOutlookEvents()
   }, [session, router])
 
   const fetchStats = async () => {
@@ -58,6 +63,34 @@ export default function Dashboard({ session }) {
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  const fetchOutlookEvents = async () => {
+    setOutlookLoading(true)
+    setOutlookError('')
+    try {
+      const response = await fetch('/api/outlook/events?days=14&limit=10')
+      const raw = await response.text()
+      let payload = {}
+      if (raw) {
+        try {
+          payload = JSON.parse(raw)
+        } catch {
+          payload = { error: `Unexpected API response: ${raw.slice(0, 200)}` }
+        }
+      }
+      if (!response.ok) {
+        throw new Error(payload.error || 'Failed to fetch Outlook events')
+      }
+      setOutlookEnabled(Boolean(payload.enabled))
+      setOutlookEvents(payload.events || [])
+    } catch (err) {
+      setOutlookError(err.message)
+      setOutlookEnabled(false)
+      setOutlookEvents([])
+    } finally {
+      setOutlookLoading(false)
+    }
   }
 
   if (loading) {
@@ -151,6 +184,43 @@ export default function Dashboard({ session }) {
               </ul>
             )}
           </div>
+        </div>
+
+        <div className="card mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">🗓️ Outlook Calendar (Read-only)</h3>
+            <button onClick={fetchOutlookEvents} className="btn-secondary text-sm">Refresh</button>
+          </div>
+          {outlookLoading ? (
+            <p className="text-gray-500">Loading Outlook events...</p>
+          ) : outlookError ? (
+            <p className="text-red-600">{outlookError}</p>
+          ) : !outlookEnabled ? (
+            <p className="text-gray-500">
+              Outlook integration is not configured yet. Add Outlook env vars to enable read-only sync.
+            </p>
+          ) : outlookEvents.length === 0 ? (
+            <p className="text-gray-500">No upcoming events in the next 14 days.</p>
+          ) : (
+            <ul className="space-y-3">
+              {outlookEvents.map((event) => (
+                <li key={event.id} className="border rounded p-3">
+                  <p className="font-medium">{event.title}</p>
+                  <p className="text-sm text-gray-600">
+                    {event.startAt ? new Date(event.startAt).toLocaleString() : 'Unknown start'}{' '}
+                    - {event.endAt ? new Date(event.endAt).toLocaleString() : 'Unknown end'}
+                  </p>
+                  {event.location && <p className="text-sm text-gray-600">Location: {event.location}</p>}
+                  {event.organizer && <p className="text-sm text-gray-600">Organizer: {event.organizer}</p>}
+                  {event.webLink && (
+                    <a href={event.webLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                      Open in Outlook
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Status Legend */}
