@@ -142,7 +142,7 @@ export default function EditContact({ session, theme, toggleTheme }) {
     setNewActivity({ type: 'call', notes: '' })
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  if (loading) return <div className="screen-center">Loading...</div>
 
   return (
     <AppShell
@@ -152,64 +152,64 @@ export default function EditContact({ session, theme, toggleTheme }) {
       onToggleTheme={toggleTheme}
       actions={<button type="button" onClick={() => router.push('/contacts')} className="btn-secondary">Back</button>}
     >
-      <div className="max-w-3xl page-stack">
-        <section className="card p-6 space-y-4">
-          {error && <p className="text-red-600">{error}</p>}
+      <div className="page-narrow page-stack">
+        <section className="card page-form stack-md">
+          {error && <p className="form-error">{error}</p>}
           <div>
-            <label className="block font-medium mb-1">Name</label>
+            <label className="form-label">Name</label>
             <input value={name} onChange={e => setName(e.target.value)} className="input-field" />
           </div>
           <div>
-            <label className="block font-medium mb-1">Email</label>
+            <label className="form-label">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="input-field" />
           </div>
           <div>
-            <label className="block font-medium mb-1">Phone</label>
+            <label className="form-label">Phone</label>
             <input value={phone} onChange={e => setPhone(e.target.value)} className="input-field" />
           </div>
           <div>
-            <label className="block font-medium mb-1">LinkedIn URL</label>
+            <label className="form-label">LinkedIn URL</label>
             <input type="url" value={linkedin} onChange={e => setLinkedin(e.target.value)} className="input-field" />
           </div>
           <div>
-            <label className="block font-medium mb-1">Company</label>
+            <label className="form-label">Company</label>
             <select value={companyId} onChange={e => setCompanyId(e.target.value)} className="input-field">
               <option value="">-- None --</option>
               {companies.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           </div>
         <div>
-          <label className="block font-medium mb-1">Status (auto-calculated)</label>
-          <p className="panel-soft p-3">{statusLabel(computedStatus)}</p>
+          <label className="form-label">Status (auto-calculated)</label>
+          <p className="panel-soft panel-pad">{statusLabel(computedStatus)}</p>
         </div>
-          <div className="flex justify-between pt-4">
-            <button onClick={handleDelete} className="text-red-600 hover:underline">Delete</button>
+          <div className="between-row top-gap-md">
+            <button onClick={handleDelete} className="danger-link">Delete</button>
             <button onClick={handleSave} className="btn-primary">Save</button>
           </div>
         </section>
 
-        <section className="card p-4">
-          <h3 className="section-title mb-3">Activities</h3>
+        <section className="card panel-pad">
+          <h3 className="section-title section-title-gap">Activities</h3>
           {activities.length === 0 ? (
             <p className="muted">No activities recorded.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="stack-sm">
               {activities.map(act => (
-                <li key={act.id} className="border-b pb-2" style={{ borderColor: 'var(--border)' }}>
-                  <p className="font-medium">{act.type.charAt(0).toUpperCase() + act.type.slice(1)}</p>
-                  <p className="text-sm muted">{new Date(act.timestamp).toLocaleString()}</p>
-                  {act.notes && <p className="mt-1">{act.notes}</p>}
+                <li key={act.id} className="activity-row">
+                  <p className="copy-strong">{act.type.charAt(0).toUpperCase() + act.type.slice(1)}</p>
+                  <p className="small-copy muted">{new Date(act.timestamp).toLocaleString()}</p>
+                  {act.notes && <p className="top-gap-xs">{act.notes}</p>}
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section className="card p-6">
-          <h3 className="section-title mb-3">Add Activity</h3>
-          <form onSubmit={handleAddActivity} className="space-y-4">
+        <section className="card page-form">
+          <h3 className="section-title section-title-gap">Add Activity</h3>
+          <form onSubmit={handleAddActivity} className="stack-md">
             <div>
-              <label className="block font-medium mb-1">Type</label>
+              <label className="form-label">Type</label>
               <select value={newActivity.type} onChange={e => setNewActivity({ ...newActivity, type: e.target.value })} className="input-field">
                 <option value="call">Call</option>
                 <option value="meeting">Meeting</option>
@@ -218,10 +218,10 @@ export default function EditContact({ session, theme, toggleTheme }) {
               </select>
             </div>
             <div>
-              <label className="block font-medium mb-1">Notes</label>
+              <label className="form-label">Notes</label>
               <textarea value={newActivity.notes} onChange={e => setNewActivity({ ...newActivity, notes: e.target.value })} className="input-field" rows={3} />
             </div>
-            <button type="submit" className="btn-primary w-full">Add Activity</button>
+            <button type="submit" className="btn-primary btn-full">Add Activity</button>
           </form>
         </section>
       </div>

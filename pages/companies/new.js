@@ -76,12 +76,12 @@ export default function NewCompany({ session, theme, toggleTheme }) {
       onToggleTheme={toggleTheme}
       actions={<button type="button" onClick={() => router.push('/companies')} className="btn-secondary">Back</button>}
     >
-      <div className="max-w-3xl">
-        <form onSubmit={handleSubmit} className="card p-6 page-stack">
-          {error && <p className="text-red-600">{error}</p>}
+      <div className="page-narrow">
+        <form onSubmit={handleSubmit} className="card page-form page-stack">
+          {error && <p className="form-error">{error}</p>}
           <div className="split-2">
             <div>
-              <label className="block font-medium mb-1">Company Name</label>
+              <label className="form-label">Company Name</label>
               <input
                 type="text"
                 required
@@ -91,7 +91,7 @@ export default function NewCompany({ session, theme, toggleTheme }) {
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Industry (optional)</label>
+              <label className="form-label">Industry (optional)</label>
               <input
                 type="text"
                 value={industry}
@@ -102,7 +102,7 @@ export default function NewCompany({ session, theme, toggleTheme }) {
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Website URL</label>
+            <label className="form-label">Website URL</label>
             <input
               type="url"
               value={website}
@@ -112,19 +112,19 @@ export default function NewCompany({ session, theme, toggleTheme }) {
             />
           </div>
 
-          <div className="panel-soft p-4">
-            <p className="section-title mb-2">Keyword Presets</p>
-            <div className="space-y-2">
+          <div className="panel-soft panel-pad">
+            <p className="section-title section-title-gap">Keyword Presets</p>
+            <div className="stack-sm">
               {Object.values(KEYWORD_PRESETS).map((preset) => (
-                <label key={preset.id} className="flex items-start gap-2">
+                <label key={preset.id} className="checklist-item">
                   <input
                     type="checkbox"
                     checked={selectedPresetIds.includes(preset.id)}
                     onChange={() => togglePreset(preset.id)}
                   />
                   <span>
-                    <span className="font-medium">{preset.label}</span>
-                    <span className="text-sm muted block">{preset.keywords.join(', ')}</span>
+                    <span className="copy-strong">{preset.label}</span>
+                    <span className="small-copy muted force-block">{preset.keywords.join(', ')}</span>
                   </span>
                 </label>
               ))}
@@ -132,7 +132,7 @@ export default function NewCompany({ session, theme, toggleTheme }) {
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Custom Keywords (comma separated)</label>
+            <label className="form-label">Custom Keywords (comma separated)</label>
             <input
               type="text"
               placeholder="t.ex. upphandling, expansion, kundcase"
@@ -144,16 +144,16 @@ export default function NewCompany({ session, theme, toggleTheme }) {
 
           <details className="disclosure" open>
             <summary>Preview Query</summary>
-            <div className="disclosure-content space-y-2">
-              <p className="text-sm"><strong>Keywords:</strong> {previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
-              <p className="text-sm break-all"><strong>Google query:</strong> {googleQuery}</p>
-              <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-link text-sm">
+            <div className="disclosure-content stack-sm">
+              <p className="small-copy"><strong>Keywords:</strong> {previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
+              <p className="small-copy break-anywhere"><strong>Google query:</strong> {googleQuery}</p>
+              <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
                 Test in Google News
               </a>
             </div>
           </details>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full">
+          <button type="submit" disabled={loading} className="btn-primary btn-full">
             {loading ? 'Saving...' : 'Create Company'}
           </button>
         </form>

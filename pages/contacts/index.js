@@ -86,7 +86,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
   })
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return <div className="screen-center">Loading...</div>
   }
 
   return (
@@ -97,7 +97,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
       onToggleTheme={toggleTheme}
       actions={<Link href="/contacts/new" className="btn-primary">+ Add Contact</Link>}
     >
-      <div className="card p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="card contact-filter-grid">
         <input
           type="text"
           placeholder="Search contacts..."
@@ -118,10 +118,10 @@ export default function Contacts({ session, theme, toggleTheme }) {
         <button onClick={fetchData} className="btn-secondary">Refresh</button>
       </div>
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
+      {error && <p className="form-error form-error-gap">{error}</p>}
 
-      <div className="card overflow-hidden">
-        <table className="min-w-full">
+      <div className="card table-card">
+        <table className="data-table">
           <thead>
             <tr>
               <th className="table-header">Contact</th>
@@ -136,8 +136,8 @@ export default function Contacts({ session, theme, toggleTheme }) {
             {filteredContacts.map((contact) => (
               <tr key={contact.id} className={getStatusClass(contact)}>
                 <td className="table-cell">
-                  <p className="font-medium">{contact.name}</p>
-                  <p className="text-xs muted">{contact.linkedin_url ? 'LinkedIn connected' : 'No LinkedIn URL'}</p>
+                  <p className="copy-strong">{contact.name}</p>
+                  <p className="tiny-copy muted">{contact.linkedin_url ? 'LinkedIn connected' : 'No LinkedIn URL'}</p>
                 </td>
                 <td className="table-cell">{contact.companies?.name || '-'}</td>
                 <td className="table-cell">
@@ -145,34 +145,34 @@ export default function Contacts({ session, theme, toggleTheme }) {
                     {statusLabel(contact.status)}
                   </span>
                 </td>
-                <td className="table-cell text-xs">
+                <td className="table-cell tiny-copy">
                   <p>{contact.last_touchpoint ? new Date(contact.last_touchpoint).toLocaleDateString() : '-'}</p>
                   <p className="muted">{contact.next_activity ? new Date(contact.next_activity).toLocaleDateString() : '-'}</p>
                 </td>
                 <td className="table-cell">
-                  <div className="flex items-center gap-3 text-lg">
+                  <div className="quick-actions">
                     {contact.email ? (
                       <a href={`mailto:${contact.email}`} title={contact.email} className="icon-btn">✉</a>
                     ) : (
-                      <span className="icon-btn opacity-40">✉</span>
+                      <span className="icon-btn icon-btn-disabled">✉</span>
                     )}
                     {contact.phone ? (
                       <a href={`tel:${contact.phone}`} title={contact.phone} className="icon-btn">☎</a>
                     ) : (
-                      <span className="icon-btn opacity-40">☎</span>
+                      <span className="icon-btn icon-btn-disabled">☎</span>
                     )}
                   </div>
                 </td>
                 <td className="table-cell">
-                  <Link href={`/contacts/${contact.id}`} className="mr-3 hover:underline">Edit</Link>
-                  <button onClick={() => deleteContact(contact.id)} className="text-red-600 hover:underline">Delete</button>
+                  <Link href={`/contacts/${contact.id}`} className="table-link">Edit</Link>
+                  <button onClick={() => deleteContact(contact.id)} className="danger-link">Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {filteredContacts.length === 0 && (
-          <p className="text-center py-8 muted">No contacts found</p>
+          <p className="table-empty muted">No contacts found</p>
         )}
       </div>
     </AppShell>

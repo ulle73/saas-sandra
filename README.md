@@ -31,7 +31,7 @@
    Open `http://localhost:3000` in your browser.
 
 ## 📋 What the repo contains
-- **Next.js** app with TailwindCSS UI
+- **Next.js** app with custom CSS UI (light/dark theme)
 - **Supabase** client (`lib/supabase.js`) – uses the public anon key for client‑side, service role for server‑side functions.
 - **Pages**:
   - `/` – sign‑in / sign‑up
@@ -43,7 +43,7 @@
   - `/leads` – AI Lead Discovery (new potential customers only)
 - **Supabase SQL bootstrap** (`supabase/schema.sql`) – canonical schema + RLS policies for all app tables.
 - **AI Lead Generator** (placeholder – you can call the OpenAI API from an edge function or Cron job to fill `weekly_leads` table).
-- **Tailwind** – ready‑to‑use utility classes. The colour‑coding for contact status is implemented in `styles/globals.css`.
+- **Styling system** – centralized in `styles/globals.css` with component classes and theme tokens.
 
 ## 🛠️ Development notes
 - **Authentication** – uses Supabase Auth (email/password). After login the session is stored client‑side and passed as a prop to pages.
@@ -65,7 +65,6 @@
 ## 📚 Resources
 - Supabase docs – https://supabase.com/docs
 - Next.js docs – https://nextjs.org/docs
-- TailwindCSS – https://tailwindcss.com
 - OpenAI API – https://platform.openai.com/docs
 
 ---

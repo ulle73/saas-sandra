@@ -74,11 +74,11 @@ export default function NewContact({ session, theme, toggleTheme }) {
       onToggleTheme={toggleTheme}
       actions={<button type="button" onClick={() => router.push('/contacts')} className="btn-secondary">Back</button>}
     >
-      <div className="max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-5 card p-6">
-          {error && <p className="text-red-600">{error}</p>}
+      <div className="page-medium">
+        <form onSubmit={handleSubmit} className="card page-form stack-lg">
+          {error && <p className="form-error">{error}</p>}
           <div>
-            <label className="block font-medium mb-1">Name</label>
+            <label className="form-label">Name</label>
             <input
               type="text"
               required
@@ -88,7 +88,7 @@ export default function NewContact({ session, theme, toggleTheme }) {
             />
           </div>
           <div>
-            <label className="block font-medium mb-1">Email</label>
+            <label className="form-label">Email</label>
             <input
               type="email"
               value={email}
@@ -97,7 +97,7 @@ export default function NewContact({ session, theme, toggleTheme }) {
             />
           </div>
           <div>
-            <label className="block font-medium mb-1">Phone</label>
+            <label className="form-label">Phone</label>
             <input
               type="text"
               value={phone}
@@ -106,7 +106,7 @@ export default function NewContact({ session, theme, toggleTheme }) {
             />
           </div>
           <div>
-            <label className="block font-medium mb-1">LinkedIn URL</label>
+            <label className="form-label">LinkedIn URL</label>
             <input
               type="url"
               value={linkedin}
@@ -115,7 +115,7 @@ export default function NewContact({ session, theme, toggleTheme }) {
             />
           </div>
           <div>
-            <label className="block font-medium mb-1">Company</label>
+            <label className="form-label">Company</label>
             <select
               value={companyId}
               onChange={e => setCompanyId(e.target.value)}
@@ -127,10 +127,10 @@ export default function NewContact({ session, theme, toggleTheme }) {
               ))}
             </select>
           </div>
-          <button type="submit" disabled={loading} className="btn-primary w-full">
+          <button type="submit" disabled={loading} className="btn-primary btn-full">
             {loading ? 'Saving...' : 'Create Contact'}
           </button>
-          {loadingCompanies && <p className="text-sm muted">Loading companies...</p>}
+          {loadingCompanies && <p className="small-copy muted">Loading companies...</p>}
         </form>
       </div>
     </AppShell>

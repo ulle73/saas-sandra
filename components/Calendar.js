@@ -6,19 +6,15 @@ export default function Calendar({ events = [], onEventClick, onDateClick }) {
   // Calendar Logic (Native JS)
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
   const getFirstDayOfMonth = (date) => {
-    // 0 = Sunday, 1 = Monday. We want Monday start?
-    // Let's assume standard Sunday start for now or adjust to Monday (ISO)
-    // getDay() returns 0 for Sunday.
+    // 0 = Sunday, 1 = Monday. 
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay() 
   }
 
   const daysInMonth = getDaysInMonth(currentDate)
   const firstDay = getFirstDayOfMonth(currentDate)
   
-  // Adjust for Monday start if desired (Optional: standard 0-6 Sun-Sat is safer for international unless specified)
-  // Let's stick to Sunday start for simplicity, or we can shift.
-  // Actually, Sweden/Europe uses Monday. Let's do Monday start.
-  // if day is 0 (Sun), it becomes 6. 1 (Mon) becomes 0.
+  // Standardize on Monday start for business calendar
+  // If firstDay is 0 (Sunday), offset is 6. If 1 (Monday), offset is 0.
   const startOffset = firstDay === 0 ? 6 : firstDay - 1 
 
   const prevMonthDays = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate()
@@ -44,8 +40,8 @@ export default function Calendar({ events = [], onEventClick, onDateClick }) {
         })
     }
 
-    // Next month filler
-    const totalSlots = 42 // 6 rows * 7 cols
+    // Next month filler - Ensure 6 rows (42 cells) for consistent height
+    const totalSlots = 42 
     const remaining = totalSlots - days.length
     for (let i = 1; i <= remaining; i++) {
         days.push({
@@ -76,32 +72,32 @@ export default function Calendar({ events = [], onEventClick, onDateClick }) {
   ]
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
+    <div className="calendar">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 px-2">
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-400 dark:to-violet-400">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+        <div className="calendar-header">
+            <h2 className="calendar-title">
+                {monthNames[currentDate.getMonth()]} <span className="calendar-year">{currentDate.getFullYear()}</span>
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="calendar-controls">
                 <button 
                     onClick={() => changeMonth(-1)}
-                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"
+                    className="calendar-nav-button"
                 >
-                    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="calendar-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
                 <button 
                     onClick={() => setCurrentDate(new Date())}
-                    className="text-sm font-semibold px-3 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                    className="calendar-today-button"
                 >
                     Today
                 </button>
                 <button 
                     onClick={() => changeMonth(1)}
-                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"
+                    className="calendar-nav-button"
                 >
-                    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="calendar-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
@@ -109,43 +105,43 @@ export default function Calendar({ events = [], onEventClick, onDateClick }) {
         </div>
 
         {/* Grid Header */}
-        <div className="grid grid-cols-7 mb-2 text-center">
+        <div className="calendar-weekdays">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                <div key={day} className="text-xs font-bold text-slate-400 uppercase tracking-wider py-2">
+                <div key={day} className="calendar-weekday">
                     {day}
                 </div>
             ))}
         </div>
 
         {/* Grid Body */}
-        <div className="grid grid-cols-7 gap-1 flex-1 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800">
+        <div className="calendar-grid">
             {calendarDays.map((cell, index) => {
                 const dayEvents = events.filter(e => {
                     if (!e.startAt) return false;
                     return isSameDay(new Date(e.startAt), cell.date)
                 })
 
+                const isToday = isSameDay(cell.date, new Date())
+
                 return (
                     <div 
                         key={index}
                         onClick={() => onDateClick && onDateClick(cell.date)}
-                        className={`
-                            min-h-[100px] p-2 flex flex-col gap-1 transition-colors cursor-pointer
-                            ${cell.isCurrentMonth ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950/50'}
-                            hover:bg-blue-50 dark:hover:bg-slate-800/50
-                        `}
+                        className={`calendar-cell ${!cell.isCurrentMonth ? 'calendar-cell-muted' : ''}`}
                     >
-                        <div className={`
-                            text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full mb-1
-                            ${isSameDay(cell.date, new Date()) 
-                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
-                                : cell.isCurrentMonth ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400'}
-                        `}>
-                            {cell.day}
+                        <div className="calendar-cell-top">
+                           <div className={`calendar-day ${isToday ? 'calendar-day-today' : 'calendar-day-default'}`}>
+                               {cell.day}
+                           </div>
+                           {dayEvents.length > 0 && (
+                             <span className="calendar-event-count">
+                               {dayEvents.length}
+                             </span>
+                           )}
                         </div>
 
                         {/* Events Stack */}
-                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[80px]">
+                        <div className="calendar-event-list custom-scrollbar">
                             {dayEvents.map(event => (
                                 <div 
                                     key={event.id}
@@ -153,7 +149,7 @@ export default function Calendar({ events = [], onEventClick, onDateClick }) {
                                         e.stopPropagation()
                                         onEventClick && onEventClick(event)
                                     }}
-                                    className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border-l-2 border-blue-500 truncate hover:brightness-95 transition-all"
+                                    className="event-pill"
                                     title={event.title}
                                 >
                                     {event.title}

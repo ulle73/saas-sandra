@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 function MyApp({ Component, pageProps }) {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [theme, setTheme] = useState('light')
+  const [theme, setTheme] = useState('dark')
 
   useEffect(() => {
     // Get initial session
@@ -25,14 +25,14 @@ function MyApp({ Component, pageProps }) {
   useEffect(() => {
     try {
       const storedTheme = localStorage.getItem('app-theme')
-      if (storedTheme === 'light' || storedTheme === 'dark') {
-        setTheme(storedTheme)
+      if (storedTheme === 'light') {
+        setTheme('light')
       } else {
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-        setTheme(prefersDark ? 'dark' : 'light')
+        // Default to dark for premium look, even if no storage or system preference
+        setTheme('dark')
       }
     } catch {
-      setTheme('light')
+      setTheme('dark')
     }
   }, [])
 
@@ -50,8 +50,8 @@ function MyApp({ Component, pageProps }) {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-xl">Loading...</div>
+    return <div className="screen-center">
+      <div className="loading-copy">Loading...</div>
     </div>
   }
 

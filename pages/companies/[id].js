@@ -144,7 +144,7 @@ export default function EditCompany({ session, theme, toggleTheme }) {
     })
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  if (loading) return <div className="screen-center">Loading...</div>
 
   const customKeywords = parseCustomKeywords(customKeywordsInput)
   const previewKeywords = buildKeywordsFromPresets(selectedPresetIds, customKeywords, 10, [])
@@ -163,23 +163,23 @@ export default function EditCompany({ session, theme, toggleTheme }) {
       onToggleTheme={toggleTheme}
       actions={<button type="button" onClick={() => router.push('/companies')} className="btn-secondary">Back</button>}
     >
-      <div className="max-w-5xl page-stack">
-        <section className="card p-6 page-stack">
-          {error && <p className="text-red-600">{error}</p>}
+      <div className="page-wide page-stack">
+        <section className="card page-form page-stack">
+          {error && <p className="form-error">{error}</p>}
 
           <div className="split-2">
             <div>
-              <label className="block font-medium mb-1">Name</label>
+              <label className="form-label">Name</label>
               <input value={name} onChange={(e) => setName(e.target.value)} className="input-field" />
             </div>
             <div>
-              <label className="block font-medium mb-1">Industry</label>
+              <label className="form-label">Industry</label>
               <input value={industry} onChange={(e) => setIndustry(e.target.value)} className="input-field" />
             </div>
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Website</label>
+            <label className="form-label">Website</label>
             <input
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
@@ -188,19 +188,19 @@ export default function EditCompany({ session, theme, toggleTheme }) {
             />
           </div>
 
-          <div className="panel-soft p-4">
-            <p className="section-title mb-2">Keyword Presets</p>
-            <div className="space-y-2">
+          <div className="panel-soft panel-pad">
+            <p className="section-title section-title-gap">Keyword Presets</p>
+            <div className="stack-sm">
               {Object.values(KEYWORD_PRESETS).map((preset) => (
-                <label key={preset.id} className="flex items-start gap-2">
+                <label key={preset.id} className="checklist-item">
                   <input
                     type="checkbox"
                     checked={selectedPresetIds.includes(preset.id)}
                     onChange={() => togglePreset(preset.id)}
                   />
                   <span>
-                    <span className="font-medium">{preset.label}</span>
-                    <span className="text-sm muted block">{preset.keywords.join(', ')}</span>
+                    <span className="copy-strong">{preset.label}</span>
+                    <span className="small-copy muted force-block">{preset.keywords.join(', ')}</span>
                   </span>
                 </label>
               ))}
@@ -208,7 +208,7 @@ export default function EditCompany({ session, theme, toggleTheme }) {
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Custom Keywords (comma separated)</label>
+            <label className="form-label">Custom Keywords (comma separated)</label>
             <input
               value={customKeywordsInput}
               onChange={(e) => setCustomKeywordsInput(e.target.value)}
@@ -219,17 +219,17 @@ export default function EditCompany({ session, theme, toggleTheme }) {
 
           <details className="disclosure">
             <summary>Preview Query</summary>
-            <div className="disclosure-content space-y-2">
-              <p className="text-sm"><strong>Keywords:</strong> {previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
-              <p className="text-sm break-all"><strong>Google query:</strong> {googleQuery}</p>
-              <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-link text-sm">
+            <div className="disclosure-content stack-sm">
+              <p className="small-copy"><strong>Keywords:</strong> {previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
+              <p className="small-copy break-anywhere"><strong>Google query:</strong> {googleQuery}</p>
+              <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
                 Test in Google News
               </a>
             </div>
           </details>
 
-          <div className="flex justify-between items-center pt-2">
-            <button type="button" onClick={handleDelete} className="text-red-600 hover:underline">
+          <div className="between-row top-gap-sm">
+            <button type="button" onClick={handleDelete} className="danger-link">
               Delete
             </button>
             <button type="button" onClick={handleSave} className="btn-primary" disabled={saving}>
@@ -238,10 +238,10 @@ export default function EditCompany({ session, theme, toggleTheme }) {
           </div>
         </section>
 
-        <section className="card p-6 page-stack">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <section className="card page-form page-stack">
+          <div className="between-row wrap-row">
             <p className="section-title">Fetched Articles</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="action-row">
               <span className="badge badge-status-accepted">Relevant: {relevantCount}</span>
               <span className="badge badge-status-rejected">Filtered: {filteredOutCount}</span>
               <span className="badge badge-confidence-medium">Total: {fetchedArticles.length}</span>
@@ -252,10 +252,10 @@ export default function EditCompany({ session, theme, toggleTheme }) {
             <p className="muted">No fetched articles yet for this company.</p>
           ) : (
             <>
-              <ul className="space-y-3">
+              <ul className="stack-sm">
                 {visibleArticles.map((article) => (
-                  <li key={article.id} className="panel-soft p-3 space-y-2">
-                    <div className="flex flex-wrap gap-2 items-center">
+                  <li key={article.id} className="panel-soft panel-pad stack-sm">
+                    <div className="action-row align-center">
                       <span className={toArticleBadgeClass(article.is_relevant)}>
                         {article.is_relevant ? 'Relevant' : 'Filtered'}
                       </span>
@@ -264,10 +264,10 @@ export default function EditCompany({ session, theme, toggleTheme }) {
                         <span className="badge badge-priority-p2">Keyword: {article.matched_keyword}</span>
                       )}
                     </div>
-                    <a href={article.url} target="_blank" rel="noopener noreferrer" className="inline-link font-medium">
+                    <a href={article.url} target="_blank" rel="noopener noreferrer" className="inline-link copy-strong">
                       {article.title}
                     </a>
-                    <p className="text-xs muted">
+                    <p className="tiny-copy muted">
                       {article.source || 'Unknown source'} · {new Date(article.published_at).toLocaleString()}
                     </p>
                   </li>

@@ -71,7 +71,7 @@ export default function Companies({ session, theme, toggleTheme }) {
     })
   }, [companies, searchTerm])
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  if (loading) return <div className="screen-center">Loading...</div>
 
   return (
     <AppShell
@@ -82,23 +82,23 @@ export default function Companies({ session, theme, toggleTheme }) {
       actions={<Link href="/companies/new" className="btn-primary">+ New Company</Link>}
     >
       <div className="page-stack">
-        <section className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <section className="card company-filter-grid">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by name, industry or website..."
-            className="input-field md:col-span-2"
+            className="input-field company-filter-input"
           />
           <button type="button" onClick={fetchCompanies} className="btn-secondary">Refresh</button>
         </section>
 
-        {error && <p className="text-red-600">{error}</p>}
+        {error && <p className="form-error">{error}</p>}
 
         {filteredCompanies.length === 0 ? (
-          <p className="card p-6 muted">No companies added yet.</p>
+          <p className="card card-empty muted">No companies added yet.</p>
         ) : (
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <section className="companies-grid">
             {filteredCompanies.map((company) => {
               const keywords = buildKeywordsFromPresets(
                 company.news_keyword_ids,
@@ -110,10 +110,10 @@ export default function Companies({ session, theme, toggleTheme }) {
               const googleUrl = buildGoogleNewsTestUrl(query)
 
               return (
-                <article key={company.id} className="card p-5 page-stack">
-                  <div className="flex items-start justify-between gap-3">
+                <article key={company.id} className="card company-card page-stack">
+                  <div className="company-card-header">
                     <div>
-                      <h2 className="text-lg font-semibold">{company.name}</h2>
+                      <h2 className="company-name">{company.name}</h2>
                       <p className="section-meta">{company.industry || 'No industry set'}</p>
                     </div>
                     <span className="badge badge-confidence-medium">
@@ -121,10 +121,10 @@ export default function Companies({ session, theme, toggleTheme }) {
                     </span>
                   </div>
 
-                  <div className="text-sm">
-                    <p className="muted mb-1">Website</p>
+                  <div className="small-copy">
+                    <p className="muted company-website-label">Website</p>
                     {company.website ? (
-                      <a href={company.website} target="_blank" rel="noopener noreferrer" className="inline-link break-all">
+                      <a href={company.website} target="_blank" rel="noopener noreferrer" className="inline-link break-anywhere">
                         {company.website}
                       </a>
                     ) : (
@@ -134,17 +134,17 @@ export default function Companies({ session, theme, toggleTheme }) {
 
                   <details className="disclosure">
                     <summary>Signal Query Tools</summary>
-                    <div className="disclosure-content space-y-2">
-                      <p className="text-sm break-all"><strong>Query:</strong> {query}</p>
-                      <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-link text-sm">
+                    <div className="disclosure-content stack-sm">
+                      <p className="small-copy break-anywhere"><strong>Query:</strong> {query}</p>
+                      <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
                         Test in Google News
                       </a>
                     </div>
                   </details>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="action-row">
                     <Link href={`/companies/${company.id}`} className="btn-secondary">Edit</Link>
-                    <button type="button" onClick={() => deleteCompany(company.id)} className="btn-secondary text-red-600">
+                    <button type="button" onClick={() => deleteCompany(company.id)} className="btn-secondary danger-text">
                       Delete
                     </button>
                   </div>

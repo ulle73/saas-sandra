@@ -31,7 +31,7 @@ Build **Lösen** – a sales‑intelligence SaaS that aggregates contacts, track
 ## 🛠️ Tech Stack
 | Layer | Technology |
 |-------|------------|
-| Front‑end | **Next.js** (React) + TailwindCSS |
+| Front‑end | **Next.js** (React) + custom CSS |
 | Back‑end | **Supabase** (PostgreSQL) – auto‑generated REST + Realtime |
 | AI | **OpenAI GPT‑4** (prompt in Edge Function) |
 | News | **NewsAPI.org** (free tier) |

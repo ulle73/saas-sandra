@@ -387,23 +387,23 @@ export default function Leads({ session, theme, toggleTheme }) {
     const isBusy = actionLoadingId === item.id
 
     return (
-      <li key={item.id} className="card p-5 page-stack">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <li key={item.id} className="card lead-card page-stack">
+        <div className="lead-card-header">
           <div>
-            <h2 className="text-xl font-semibold">{item.company_name}</h2>
+            <h2 className="lead-company-title">{item.company_name}</h2>
             <p className="section-meta">
               Rekommenderad kontakt: {item.recommended_person_title || 'HR-chef / VD'}
             </p>
           </div>
-          <div className="text-right">
+          <div className="lead-score">
             <span className={toStatusBadgeClass(item.status)}>
               {toStatusLabel(item.status)}
             </span>
-            <p className="section-meta mt-1">Score: {item.score}/100</p>
+            <p className="section-meta lead-score-meta">Score: {item.score}/100</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="lead-badge-row">
           <span className={getPriorityClass(priorityLabel)}>{priorityLabel}</span>
           <span className={contactQuality.className}>Kontaktkvalitet: {contactQuality.label}</span>
           <span className={getSourceQualityClass(sourceQuality)}>Källkvalitet: {sourceQuality}</span>
@@ -411,26 +411,26 @@ export default function Leads({ session, theme, toggleTheme }) {
           <span className="badge badge-confidence-medium">{formatAgeLabel(item.source_published_at)}</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+        <div className="lead-signal-grid">
           <p><strong>Signal:</strong> {item.growth_signal || '-'}</p>
           <p><strong>Anställda (est):</strong> {item.employee_count_estimate || '-'}</p>
           <p><strong>Domän:</strong> {item.company_domain || '-'}</p>
         </div>
 
-        <div className="panel-soft p-3">
-          <p className="text-sm font-semibold mb-1">Nästa action</p>
-          <p className="text-sm">{nextAction}</p>
+        <div className="panel-soft lead-next-action-panel">
+          <p className="lead-next-title">Nästa action</p>
+          <p className="lead-next-copy">{nextAction}</p>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm font-semibold">Kontaktpersoner ({contactCandidates.length})</p>
+        <div className="lead-contact-section">
+          <p className="lead-next-title">Kontaktpersoner ({contactCandidates.length})</p>
           {!topContact ? (
-            <p className="muted text-sm">Inga personer hittades ännu för detta bolag.</p>
+            <p className="muted lead-small-copy">Inga personer hittades ännu för detta bolag.</p>
           ) : (
-            <div className="panel-soft p-3 text-sm">
-              <p className="font-medium">{topContact.name || 'Okänt namn'}</p>
+            <div className="panel-soft lead-contact-card">
+              <p className="lead-contact-name">{topContact.name || 'Okänt namn'}</p>
               <p>{topContact.title || '-'}</p>
-              <p className="muted mt-1">Plats: {topContact.location || '-'}</p>
+              <p className="muted lead-contact-meta">Plats: {topContact.location || '-'}</p>
               <p className="muted">E-post: {topContact.email || '-'}</p>
               <p className="muted">Telefon: {topContact.phone || '-'}</p>
               {topContact.linkedin_url || topContact.profile_url ? (
@@ -438,7 +438,7 @@ export default function Leads({ session, theme, toggleTheme }) {
                   href={topContact.linkedin_url || topContact.profile_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-link inline-block mt-1"
+                  className="inline-link lead-inline-link"
                 >
                   Öppna LinkedIn-profil
                 </a>
@@ -452,10 +452,10 @@ export default function Leads({ session, theme, toggleTheme }) {
                 {isExpanded ? 'Dölj fler kontakter' : `Visa fler kontakter (${extraContacts.length})`}
               </button>
               {isExpanded ? (
-                <ul className="space-y-2 mt-2">
+                <ul className="lead-extra-contact-list">
                   {extraContacts.map((person, index) => (
-                    <li key={`${item.id}-person-${index + 1}`} className="panel-soft p-2 text-sm">
-                      <p className="font-medium">{person.name || 'Okänt namn'}</p>
+                    <li key={`${item.id}-person-${index + 1}`} className="panel-soft lead-extra-contact">
+                      <p className="lead-contact-name">{person.name || 'Okänt namn'}</p>
                       <p>{person.title || '-'}</p>
                       <p className="muted">E-post: {person.email || '-'} · Telefon: {person.phone || '-'}</p>
                     </li>
@@ -468,7 +468,7 @@ export default function Leads({ session, theme, toggleTheme }) {
 
         <details className="disclosure">
           <summary>Visa lead-detaljer</summary>
-          <div className="disclosure-content space-y-2 text-sm">
+          <div className="disclosure-content lead-detail-content">
             <p><strong>Reason:</strong> {item.reason}</p>
             <p><strong>Pitch:</strong> {item.pitch}</p>
             <p>
@@ -482,7 +482,7 @@ export default function Leads({ session, theme, toggleTheme }) {
           </div>
         </details>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="lead-card-actions">
           <a href={linkedinCompanyUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary">
             LinkedIn bolagssök
           </a>
@@ -507,7 +507,7 @@ export default function Leads({ session, theme, toggleTheme }) {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return <div className="screen-center">Loading...</div>
   }
 
   return (
@@ -519,8 +519,8 @@ export default function Leads({ session, theme, toggleTheme }) {
       actions={<button onClick={loadData} className="btn-secondary">Refresh</button>}
     >
       <div className="page-stack">
-        {error && <p className="text-red-600">{error}</p>}
-        {actionMessage && <p className="text-blue-700">{actionMessage}</p>}
+        {error && <p className="form-error">{error}</p>}
+        {actionMessage && <p className="form-info">{actionMessage}</p>}
 
         <section className="kpi-grid">
           <div className="kpi-card">
@@ -541,9 +541,9 @@ export default function Leads({ session, theme, toggleTheme }) {
           </div>
         </section>
 
-        <section className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="card lead-filter-grid">
           <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
+            <label className="form-label">Status</label>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input-field">
               <option value="new">New</option>
               <option value="accepted">Accepted</option>
@@ -553,7 +553,7 @@ export default function Leads({ session, theme, toggleTheme }) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Min score</label>
+            <label className="form-label">Min score</label>
             <input
               type="number"
               min="1"
@@ -563,28 +563,28 @@ export default function Leads({ session, theme, toggleTheme }) {
               className="input-field"
             />
           </div>
-          <div className="flex items-end">
-            <button onClick={loadData} className="btn-secondary w-full">Refresh Data</button>
+          <div className="lead-filter-action">
+            <button onClick={loadData} className="btn-secondary btn-full">Refresh Data</button>
           </div>
         </section>
 
         {filteredItems.length === 0 ? (
-          <p className="card p-6 muted">Inga discovery-leads matchar filtret.</p>
+          <p className="card card-empty muted">Inga discovery-leads matchar filtret.</p>
         ) : (
           <>
             <section className="page-stack">
-              <div className="flex items-center justify-between">
+              <div className="section-header-row">
                 <h2 className="section-title">Top 5 idag</h2>
                 <p className="section-meta">Mest prioriterade först</p>
               </div>
-              <ul className="space-y-4">
+              <ul className="stack-md">
                 {topTodayItems.map((item) => renderLeadCard(item))}
               </ul>
             </section>
 
             {remainingItems.length > 0 ? (
               <section className="page-stack">
-                <div className="flex items-center justify-between">
+                <div className="section-header-row">
                   <h2 className="section-title">Övriga leads</h2>
                   {remainingItems.length > 6 ? (
                     <button type="button" className="btn-secondary" onClick={() => setShowAllRemaining((current) => !current)}>
@@ -592,7 +592,7 @@ export default function Leads({ session, theme, toggleTheme }) {
                     </button>
                   ) : null}
                 </div>
-                <ul className="space-y-4">
+                <ul className="stack-md">
                   {visibleRemainingItems.map((item) => renderLeadCard(item))}
                 </ul>
               </section>

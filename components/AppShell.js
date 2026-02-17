@@ -9,40 +9,49 @@ const NAV_ITEMS = [
   { href: '/leads', label: 'Leads', icon: 'leads' },
 ]
 
-function NavIcon({ kind }) {
-  if (kind === 'dashboard') {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-5 h-5">
-        <path d="M3 11.5L12 4l9 7.5" />
-        <path d="M5 10.5V20h14v-9.5" />
-      </svg>
-    )
-  }
+function NavIcon({ kind, isActive }) {
+  const iconClass = `nav-icon-svg ${isActive ? 'is-active' : ''}`
 
-  if (kind === 'contacts') {
+  const icon = () => {
+    if (kind === 'dashboard') {
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+        </svg>
+      )
+    }
+    if (kind === 'contacts') {
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      )
+    }
+    if (kind === 'companies') {
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      )
+    }
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-5 h-5">
-        <circle cx="9" cy="8" r="3" />
-        <path d="M3.5 18.5a5.5 5.5 0 0111 0" />
-        <path d="M16.5 10.5h4" />
-        <path d="M18.5 8.5v4" />
-      </svg>
-    )
-  }
-
-  if (kind === 'companies') {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-5 h-5">
-        <rect x="4" y="3.5" width="16" height="17" rx="2" />
-        <path d="M8 7.5h8M8 11.5h8M8 15.5h4" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
       </svg>
     )
   }
 
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-5 h-5">
-      <path d="M12 3l2.6 5.2L20 11l-5.4 2.8L12 19l-2.6-5.2L4 11l5.4-2.8L12 3z" />
-    </svg>
+    <div className={`nav-icon ${isActive ? 'is-active' : ''}`}>
+      {icon()}
+    </div>
   )
 }
 
@@ -57,90 +66,131 @@ export default function AppShell({ title, session, theme, onToggleTheme, childre
   const isActive = (href) => router.pathname === href || router.pathname.startsWith(`${href}/`)
 
   return (
-    <div className="min-h-screen flex bg-[var(--bg-app)] text-[var(--text-primary)] font-[family-name:var(--font-inter)] transition-colors duration-300">
-      {/* Sidebar */}
-      <aside className="w-20 lg:w-64 flex-shrink-0 sticky top-0 h-screen flex flex-col border-r border-[var(--border-subtle)] bg-[var(--nav-bg)] shadow-[var(--shadow-xl)] z-50 transition-all duration-300">
-        <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6 border-b border-[rgba(255,255,255,0.05)]">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/30">
+    <div className="app-shell">
+      <aside className="app-sidebar">
+        <div className="glass-panel shell-brand">
+          <div className="shell-logo">
             L
           </div>
-          <span className="hidden lg:block ml-3 font-bold text-lg tracking-tight text-[var(--nav-text-active)]">LOSEN</span>
+          <div>
+            <span className="shell-logo-title">LOSEN</span>
+            <span className="shell-logo-subtitle">Intelligence</span>
+          </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                group flex items-center px-3 py-2.5 rounded-xl transition-all duration-200
-                ${isActive(item.href) 
-                  ? 'bg-[var(--nav-item-active)] text-white shadow-md shadow-blue-500/20' 
-                  : 'text-[var(--nav-text)] hover:bg-[var(--nav-item-hover)] hover:text-[var(--nav-text-active)]'}
-              `}
-              title={item.label}
+        <nav className="glass-panel shell-nav">
+          <div className="shell-nav-caption">
+            Main Menu
+          </div>
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`shell-nav-link ${active ? 'is-active' : ''}`}
+              >
+                {active && (
+                  <span className="shell-nav-indicator" />
+                )}
+                <span className={`shell-nav-icon-wrap ${active ? 'is-active' : ''}`}>
+                  <NavIcon kind={item.icon} isActive={active} />
+                </span>
+                <span className="shell-nav-label">
+                  {item.label}
+                </span>
+              </Link>
+            )
+          })}
+
+          <div className="shell-nav-footer">
+             <div className="shell-nav-caption shell-nav-caption-footer">
+              Settings
+            </div>
+            <button 
+              type="button" 
+              onClick={onToggleTheme} 
+              className="shell-theme-toggle"
             >
-              <span className={`p-1 rounded-lg transition-colors ${isActive(item.href) ? 'bg-white/20' : 'bg-transparent group-hover:bg-white/5'}`}>
-                <NavIcon kind={item.icon} />
+              <span className="shell-theme-icon-wrap">
+                {theme === 'dark' ? (
+                  <svg className="shell-theme-icon sun" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="shell-theme-icon moon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
               </span>
-              <span className="hidden lg:block ml-3 font-medium text-sm">{item.label}</span>
-            </Link>
-          ))}
+              <span className="shell-theme-label">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+          </div>
         </nav>
-
-        <div className="p-4 border-t border-[rgba(255,255,255,0.05)]">
-          <button 
-            type="button" 
-            onClick={onToggleTheme} 
-            className="w-full flex items-center justify-center lg:justify-start px-3 py-2.5 rounded-xl text-[var(--nav-text)] hover:bg-[var(--nav-item-hover)] hover:text-[var(--nav-text-active)] transition-all"
-          >
-            {theme === 'dark' ? (
-              <>
-                <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span className="hidden lg:block ml-3 text-sm">Light Mode</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-                <span className="hidden lg:block ml-3 text-sm">Dark Mode</span>
-              </>
-            )}
-          </button>
-        </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Glass Header */}
-        <header className="glass-header h-16 sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[var(--text-primary)]">{title}</h1>
-            {session?.user?.email && <p className="text-xs text-[var(--text-tertiary)] hidden sm:block">{session.user.email}</p>}
+      <div className="app-main">
+        <header className="glass-header mobile-header">
+          <div className="mobile-brand">
+            <div className="mobile-logo">L</div>
+            <span className="mobile-title">LOSEN</span>
           </div>
-          <div className="flex items-center gap-3">
-            {actions}
-            <div className="h-8 w-px bg-[var(--border-subtle)] mx-1"></div>
-            <button 
-                onClick={handleLogout} 
-                className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--danger)] transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--danger-subtle)]"
-            >
-              Sign out
-            </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 p-[2px] cursor-pointer">
-               <div className="w-full h-full rounded-full bg-[var(--bg-panel)] flex items-center justify-center text-xs font-bold">
-                  {session?.user?.email?.[0].toUpperCase() || 'U'}
-               </div>
-            </div>
-          </div>
+          <button className="mobile-menu-button" type="button" aria-label="Open navigation menu">
+            <svg className="mobile-menu-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </header>
 
-        {/* content */}
-        <main className="p-4 lg:p-8 max-w-7xl mx-auto w-full flex-1">
-            {children}
+        <header className="desktop-header">
+           <div className="desktop-title-wrap">
+             <h1 className="desktop-page-title">
+               {title}
+             </h1>
+             <div className="desktop-breadcrumb">
+               <span>Losen AI</span>
+               <span>/</span>
+               <span className="desktop-breadcrumb-current">{title}</span>
+             </div>
+           </div>
+
+           <div className="desktop-header-actions">
+              {actions && (
+                <div className="glass-panel desktop-actions-wrap">
+                  {actions}
+                </div>
+              )}
+
+              <div className="desktop-divider" />
+
+              <div className="glass-panel user-pill">
+                <div className="user-pill-text">
+                  <p className="user-pill-name">{session?.user?.email?.split('@')[0]}</p>
+                  <p className="user-pill-role">Admin</p>
+                </div>
+                <div className="user-pill-avatar">
+                   <div className="user-pill-avatar-inner">
+                      {session?.user?.email?.[0].toUpperCase() || 'U'}
+                   </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={handleLogout}
+                  className="logout-button"
+                  title="Sign out"
+                >
+                  <svg className="logout-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+           </div>
+        </header>
+
+        <main className="app-content">
+           <div className="app-content-inner animate-fade-in">
+              {children}
+           </div>
         </main>
       </div>
     </div>

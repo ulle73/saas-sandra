@@ -1,0 +1,45 @@
+
+/* --- STITCH DESIGN SYSTEM OVERRIDES --- */
+[data-theme='dark'] {
+  /* Dark Theme - Stitch "Deep Midnight" */
+  --bg-app: #0a0c10;
+  --bg-panel: #1e293b;
+  --bg-panel-translucent: rgba(30, 41, 59, 0.4);
+  
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-medium: rgba(255, 255, 255, 0.1);
+  --border-highlight: rgba(37, 192, 244, 0.5);
+  
+  --primary: #25c0f4;
+  --primary-hover: #60a5fa;
+  --primary-subtle: rgba(37, 192, 244, 0.1);
+  --primary-text: #dbeafe;
+  --primary-glow: rgba(37, 192, 244, 0.4);
+
+  --accent: #a78bfa;
+  --accent-subtle: rgba(139, 92, 246, 0.15);
+  --accent-glow: rgba(167, 139, 250, 0.5);
+  
+  --success: #22c55e;
+  --success-subtle: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.15);
+  --danger: #f43f5e;
+  --danger-subtle: rgba(244, 63, 94, 0.15);
+
+  --nav-bg: rgba(10, 12, 16, 0.8);
+  --nav-text: #94a3b8;
+  --nav-text-active: #25c0f4;
+  --nav-item-hover: rgba(255, 255, 255, 0.05);
+  --nav-item-active: #25c0f4;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px -5px var(--primary-glow);
+}
