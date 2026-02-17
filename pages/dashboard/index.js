@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import AppShell from '../../components/AppShell'
 import { BentoGrid, BentoItem } from '../../components/BentoGrid'
 import KPICard from '../../components/KPICard'
-import Calendar from '../../components/Calendar'
+import WeekBookingBoard from '../../components/WeekBookingBoard'
 import { computeContactStatus } from '../../lib/contactStatus'
 import { buildOutlookSyncPlan } from '../../lib/outlookSync'
 
@@ -18,7 +18,6 @@ export default function Dashboard({ session, theme, toggleTheme }) {
   // Outlook Sync State
   const [outlookEvents, setOutlookEvents] = useState([])
   const [unmatchedEvents, setUnmatchedEvents] = useState([])
-  const [contactsForSync, setContactsForSync] = useState([])
   const [outlookLoading, setOutlookLoading] = useState(true)
   const [outlookEnabled, setOutlookEnabled] = useState(false)
 
@@ -89,17 +88,54 @@ export default function Dashboard({ session, theme, toggleTheme }) {
 
       if (payload.enabled) {
         const contacts = await loadContactsForOutlookSync()
-        setContactsForSync(contacts)
         const plan = buildOutlookSyncPlan(payload.events || [], contacts)
         setUnmatchedEvents(plan.unmatchedEvents)
+      } else {
+        setUnmatchedEvents([])
       }
     } catch (err) {
       console.error('Outlook sync error:', err)
       setOutlookEnabled(false)
+      setUnmatchedEvents([])
     } finally {
       setOutlookLoading(false)
     }
   }
+
+  const outlookSummary = useMemo(() => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const endOfToday = new Date(startOfToday)
+    endOfToday.setDate(endOfToday.getDate() + 1)
+
+    const day = now.getDay()
+    const mondayOffset = day === 0 ? -6 : 1 - day
+    const weekStart = new Date(startOfToday)
+    weekStart.setDate(weekStart.getDate() + mondayOffset)
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekEnd.getDate() + 7)
+
+    let todayCount = 0
+    let weekCount = 0
+    let nextEvent = null
+
+    outlookEvents.forEach((event) => {
+      const start = event?.startAt ? new Date(event.startAt) : null
+      if (!start || Number.isNaN(start.getTime())) return
+
+      if (start >= startOfToday && start < endOfToday) todayCount += 1
+      if (start >= weekStart && start < weekEnd) weekCount += 1
+      if (start > now && (!nextEvent || start < new Date(nextEvent.startAt))) {
+        nextEvent = event
+      }
+    })
+
+    return {
+      todayCount,
+      weekCount,
+      nextEvent,
+    }
+  }, [outlookEvents])
 
   if (loading) return null // Keep first paint clean until dashboard data is ready
 
@@ -168,28 +204,27 @@ export default function Dashboard({ session, theme, toggleTheme }) {
              />
           </BentoItem>
 
-          {/* Large Calendar / Chart Area */}
-          <BentoItem colSpan={2} rowSpan={2} className="dashboard-calendar-panel">
+          <BentoItem colSpan={4} className="dashboard-planner-panel">
              <div className="dashboard-panel-header">
                 <div>
-                   <h3 className="dashboard-panel-title">Activity Calendar</h3>
-                   <p className="dashboard-panel-meta">Outlook Sync Status: {outlookEnabled ? 'Active' : 'Disconnected'}</p>
+                   <h3 className="dashboard-panel-title">Calendar + Trello Week Board</h3>
+                   <p className="dashboard-panel-meta">
+                     Outlook Sync: {outlookEnabled ? 'Active' : 'Disconnected'} · Idag: {outlookSummary.todayCount} · Veckan: {outlookSummary.weekCount}
+                     {outlookSummary.nextEvent?.startAt ? ` · Nästa: ${new Date(outlookSummary.nextEvent.startAt).toLocaleString('sv-SE')}` : ''}
+                   </p>
                 </div>
-                <button className="icon-btn">
-                   <span className="material-symbols-outlined">more_horiz</span>
+                <button type="button" className="btn-secondary" onClick={fetchOutlookEvents} disabled={outlookLoading}>
+                   {outlookLoading ? 'Synkar...' : 'Synka om'}
                 </button>
              </div>
              
-             <div className="dashboard-calendar-wrap">
+             <div className="dashboard-planner-wrap">
                 {outlookLoading ? (
                   <div className="dashboard-spinner-wrap">
                     <div className="dashboard-spinner"></div>
                   </div>
                 ) : (
-                  <Calendar 
-                    events={outlookEvents} 
-                    onEventClick={(e) => console.log(e)}
-                  />
+                  <WeekBookingBoard events={outlookEvents} />
                 )}
              </div>
           </BentoItem>
