@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import AppShell from '../../components/AppShell'
 import {
   KEYWORD_PRESETS,
   parseCustomKeywords,
@@ -9,7 +10,7 @@ import {
   buildGoogleNewsTestUrl,
 } from '../../lib/newsKeywords'
 
-export default function NewCompany({ session }) {
+export default function NewCompany({ session, theme, toggleTheme }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [industry, setIndustry] = useState('')
@@ -68,35 +69,38 @@ export default function NewCompany({ session }) {
   if (!session) return null
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold">🏢 New Company</h1>
-          <button onClick={() => router.back()} className="btn-secondary">Back</button>
-        </div>
-      </nav>
-      <main className="max-w-2xl mx-auto py-8">
-        <form onSubmit={handleSubmit} className="card p-6 space-y-4">
+    <AppShell
+      title="New Company"
+      session={session}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      actions={<button type="button" onClick={() => router.push('/companies')} className="btn-secondary">Back</button>}
+    >
+      <div className="max-w-3xl">
+        <form onSubmit={handleSubmit} className="card p-6 page-stack">
           {error && <p className="text-red-600">{error}</p>}
-          <div>
-            <label className="block font-medium mb-1">Company Name</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="input-field"
-            />
+          <div className="split-2">
+            <div>
+              <label className="block font-medium mb-1">Company Name</label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Industry (optional)</label>
+              <input
+                type="text"
+                value={industry}
+                onChange={e => setIndustry(e.target.value)}
+                className="input-field"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block font-medium mb-1">Industry (optional)</label>
-            <input
-              type="text"
-              value={industry}
-              onChange={e => setIndustry(e.target.value)}
-              className="input-field"
-            />
-          </div>
+
           <div>
             <label className="block font-medium mb-1">Website URL</label>
             <input
@@ -104,10 +108,12 @@ export default function NewCompany({ session }) {
               value={website}
               onChange={e => setWebsite(e.target.value)}
               className="input-field"
+              placeholder="https://example.com"
             />
           </div>
-          <div>
-            <label className="block font-medium mb-2">Keyword Presets</label>
+
+          <div className="panel-soft p-4">
+            <p className="section-title mb-2">Keyword Presets</p>
             <div className="space-y-2">
               {Object.values(KEYWORD_PRESETS).map((preset) => (
                 <label key={preset.id} className="flex items-start gap-2">
@@ -118,12 +124,13 @@ export default function NewCompany({ session }) {
                   />
                   <span>
                     <span className="font-medium">{preset.label}</span>
-                    <span className="text-sm text-gray-500 block">{preset.keywords.join(', ')}</span>
+                    <span className="text-sm muted block">{preset.keywords.join(', ')}</span>
                   </span>
                 </label>
               ))}
             </div>
           </div>
+
           <div>
             <label className="block font-medium mb-1">Custom Keywords (comma separated)</label>
             <input
@@ -134,20 +141,23 @@ export default function NewCompany({ session }) {
               className="input-field"
             />
           </div>
-          <div className="bg-gray-50 border rounded p-3 space-y-2">
-            <p className="text-sm font-medium">Preview keywords:</p>
-            <p className="text-sm text-gray-600">{previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
-            <p className="text-sm font-medium">Google Alerts query:</p>
-            <p className="text-sm text-gray-700 break-all">{googleQuery}</p>
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-              Test in Google News
-            </a>
-          </div>
+
+          <details className="disclosure" open>
+            <summary>Preview Query</summary>
+            <div className="disclosure-content space-y-2">
+              <p className="text-sm"><strong>Keywords:</strong> {previewKeywords.length ? previewKeywords.join(', ') : 'No keywords selected'}</p>
+              <p className="text-sm break-all"><strong>Google query:</strong> {googleQuery}</p>
+              <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-link text-sm">
+                Test in Google News
+              </a>
+            </div>
+          </details>
+
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Saving...' : 'Create Company'}
           </button>
         </form>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   )
 }

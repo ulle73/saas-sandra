@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
+import AppShell from '../../components/AppShell'
+import Calendar from '../../components/Calendar'
 import { computeContactStatus } from '../../lib/contactStatus'
 import {
   buildOutlookSyncPlan,
@@ -9,7 +11,7 @@ import {
   inferContactNameFromEvent,
 } from '../../lib/outlookSync'
 
-export default function Dashboard({ session }) {
+export default function Dashboard({ session, theme, toggleTheme }) {
   const router = useRouter()
   const [stats, setStats] = useState({ green: 0, yellow: 0, red: 0, total: 0 })
   const [recentActivity, setRecentActivity] = useState([])
@@ -26,6 +28,7 @@ export default function Dashboard({ session }) {
   const [outlookError, setOutlookError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showUnmatchedPanel, setShowUnmatchedPanel] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -69,11 +72,6 @@ export default function Dashboard({ session }) {
     }
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
   const loadContactsForOutlookSync = async () => {
     const { data, error: contactsError } = await supabase
       .from('contacts')
@@ -112,7 +110,8 @@ export default function Dashboard({ session }) {
     setOutlookActionMessage('')
 
     try {
-      const response = await fetch('/api/outlook/events?days=14&limit=20')
+      // Fetch more days to fill the calendar month view better
+      const response = await fetch('/api/outlook/events?days=40&limit=100')
       const raw = await response.text()
       let payload = {}
       if (raw) {
@@ -277,235 +276,150 @@ export default function Dashboard({ session }) {
     await fetchStats()
   }
 
+  const StatCard = ({ label, value, colorClass }) => (
+    <div className="glass-panel p-4 flex flex-col items-center justify-center min-w-[120px]">
+        <span className="text-2xl font-bold font-outfit" style={{ color: colorClass }}>
+            {value}
+        </span>
+        <span className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mt-1">
+            {label}
+        </span>
+    </div>
+  )
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)]">
+            <div className="animate-pulse flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin mb-4"></div>
+                <div className="text-[var(--text-secondary)] font-medium">Loading Dashboard...</div>
+            </div>
+        </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">🔐 Lösen</h1>
-              <div className="ml-8 flex space-x-4">
-                <Link href="/dashboard" className="text-blue-600 font-medium">Dashboard</Link>
-                <Link href="/contacts" className="text-gray-600 hover:text-gray-900">Contacts</Link>
-                <Link href="/companies" className="text-gray-600 hover:text-gray-900">Companies</Link>
-                <Link href="/leads" className="text-gray-600 hover:text-gray-900">AI Leads</Link>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <span className="text-sm text-gray-500 mr-4">{session?.user?.email}</span>
-              <button onClick={handleLogout} className="btn-secondary text-sm">Logout</button>
-            </div>
-          </div>
+    <AppShell
+      title="Dashboard"
+      session={session}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      actions={
+        <div className="flex gap-2">
+            <Link href="/contacts/new" className="btn btn-primary text-xs">
+                + Contact
+            </Link>
+            <button 
+                onClick={() => setShowUnmatchedPanel(!showUnmatchedPanel)} 
+                className={`btn btn-secondary text-xs ${unmatchedEvents.length > 0 ? 'border-amber-400 text-amber-500' : ''}`}
+            >
+                {unmatchedEvents.length > 0 ? `Unmatched (${unmatchedEvents.length})` : 'Sync Status'}
+            </button>
         </div>
-      </nav>
+      }
+    >
+      {error && <p className="bg-[var(--danger-subtle)] text-[var(--danger)] p-3 rounded-lg mb-4">{error}</p>}
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">📊 Dashboard</h2>
-        {error && <p className="text-red-600 mb-4">{error}</p>}
+      {/* Top Stats Row */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Active" value={stats.green} colorClass="var(--success)" />
+        <StatCard label="At Risk" value={stats.yellow} colorClass="var(--warning)" />
+        <StatCard label="Critical" value={stats.red} colorClass="var(--danger)" />
+        <StatCard label="Total" value={stats.total} colorClass="var(--text-primary)" />
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="card text-center">
-            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-gray-500">Total Contacts</div>
-          </div>
-          <div className="card text-center border-l-4 border-green-500">
-            <div className="text-3xl font-bold text-green-600">{stats.green}</div>
-            <div className="text-gray-500">🟢 Active (scheduled)</div>
-          </div>
-          <div className="card text-center border-l-4 border-yellow-500">
-            <div className="text-3xl font-bold text-yellow-600">{stats.yellow}</div>
-            <div className="text-gray-500">🟡 Recent touch</div>
-          </div>
-          <div className="card text-center border-l-4 border-red-500">
-            <div className="text-3xl font-bold text-red-600">{stats.red}</div>
-            <div className="text-gray-500">🔴 Needs attention</div>
-          </div>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+        {/* Main Calendar View */}
+        <div className={`
+            ${showUnmatchedPanel ? 'xl:col-span-8' : 'xl:col-span-12'} 
+            h-full flex flex-col gap-6 transition-all duration-300
+        `}>
+            <div className="glass-panel p-1 flex-1 h-full overflow-hidden flex flex-col">
+                {outlookLoading ? (
+                    <div className="h-full flex items-center justify-center text-[var(--muted)]">Loading calendar...</div>
+                ) : (
+                    <Calendar 
+                        events={outlookEvents} 
+                        onEventClick={(e) => console.log('Clicked event', e)}
+                    />
+                )}
+            </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-4">🚀 Quick Actions</h3>
-            <div className="space-y-3">
-              <Link href="/contacts/new" className="block p-3 bg-blue-50 rounded hover:bg-blue-600">
-                + Add New Contact
-              </Link>
-              <Link href="/companies/new" className="block p-3 bg-green-50 rounded hover:bg-green-500">
-                + Add New Company
-              </Link>
-              <Link href="/leads" className="block p-3 bg-purple-50 rounded hover:bg-purple-100">
-                🤖 Generate Weekly Leads
-              </Link>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-4">📅 Recent Activity</h3>
-            {recentActivity.length === 0 ? (
-              <p className="text-gray-500">No recent activity</p>
-            ) : (
-              <ul className="space-y-3">
-                {recentActivity.map((activity) => (
-                  <li key={activity.id} className="flex items-start space-x-3">
-                    <span className="text-2xl">
-                      {activity.type === 'meeting' ? '📅' : activity.type === 'call' ? '📞' : '✉️'}
-                    </span>
-                    <div>
-                      <p className="font-medium">{activity.contacts?.name || 'Unknown'}</p>
-                      <p className="text-sm text-gray-500">
-                        {activity.type} - {new Date(activity.timestamp).toLocaleDateString()}
-                      </p>
+        {/* Side Panel: Unmatched Events / Inbox */}
+        {showUnmatchedPanel && (
+            <div className="xl:col-span-4 h-full flex flex-col gap-4 animate-fade-in">
+                <div className="glass-panel p-4 h-full overflow-y-auto">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-outfit font-bold text-lg">Inbox</h3>
+                        <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-bold border border-amber-200">
+                            {unmatchedEvents.length} Pending
+                        </span>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className="card mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">🗓️ Outlook Calendar (Read-only)</h3>
-            <button onClick={fetchOutlookEvents} className="btn-secondary text-sm">Refresh</button>
-          </div>
-
-          {outlookActionMessage && <p className="text-sm text-blue-700 mb-3">{outlookActionMessage}</p>}
-          {outlookSyncing && <p className="text-sm text-gray-600 mb-3">Synkar kontakter från Outlook...</p>}
-
-          {!outlookLoading && outlookEnabled && !outlookError && (
-            <p className="text-sm text-gray-600 mb-4">
-              Matchade events: {outlookSyncSummary.matched} | Uppdaterade kontakter: {outlookSyncSummary.updated} | Omatchade events: {outlookSyncSummary.unmatched}
-            </p>
-          )}
-
-          {outlookLoading ? (
-            <p className="text-gray-500">Loading Outlook events...</p>
-          ) : outlookError ? (
-            <p className="text-red-600">{outlookError}</p>
-          ) : !outlookEnabled ? (
-            <p className="text-gray-500">
-              Outlook integration is not configured yet. Add Outlook env vars to enable read-only sync.
-            </p>
-          ) : outlookEvents.length === 0 ? (
-            <p className="text-gray-500">No upcoming events in the next 14 days.</p>
-          ) : (
-            <ul className="space-y-3">
-              {outlookEvents.map((event) => (
-                <li key={event.id} className="border rounded p-3">
-                  <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-gray-600">
-                    {event.startAt ? new Date(event.startAt).toLocaleString() : 'Unknown start'}{' '}
-                    - {event.endAt ? new Date(event.endAt).toLocaleString() : 'Unknown end'}
-                  </p>
-                  {event.location && <p className="text-sm text-gray-600">Location: {event.location}</p>}
-                  {event.organizer && <p className="text-sm text-gray-600">Organizer: {event.organizer}</p>}
-                  {event.attendeeEmails?.length > 0 && (
-                    <p className="text-sm text-gray-600">Attendees: {event.attendeeEmails.join(', ')}</p>
-                  )}
-                  {event.webLink && (
-                    <a href={event.webLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                      Open in Outlook
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {outlookEnabled && !outlookLoading && !outlookError && (
-          <div className="card mb-8">
-            <h3 className="text-lg font-semibold mb-4">🔎 Omatchade Outlook-händelser</h3>
-            {unmatchedEvents.length === 0 ? (
-              <p className="text-gray-500">Alla hämtade events kunde matchas mot en kontakt.</p>
-            ) : (
-              <div className="space-y-4">
-                {unmatchedEvents.map((event) => (
-                  <div key={event.id} className="border rounded p-4">
-                    <p className="font-semibold">{event.title}</p>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {event.startAt ? new Date(event.startAt).toLocaleString() : 'Unknown start'}{' '}
-                      - {event.endAt ? new Date(event.endAt).toLocaleString() : 'Unknown end'}
-                    </p>
-                    {event.matchEmails?.length > 0 ? (
-                      <p className="text-sm text-gray-600 mb-3">E-post i event: {event.matchEmails.join(', ')}</p>
-                    ) : (
-                      <p className="text-sm text-gray-600 mb-3">Ingen deltagar-e-post hittades i eventet.</p>
+                    
+                    {outlookActionMessage && (
+                        <div className="text-sm bg-blue-50 text-blue-700 p-2 rounded mb-3 border border-blue-100">
+                            {outlookActionMessage}
+                        </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                      <select
-                        value={linkSelections[event.id] || ''}
-                        onChange={(e) => setLinkSelections((previous) => ({ ...previous, [event.id]: e.target.value }))}
-                        className="input-field md:col-span-2"
-                      >
-                        <option value="">Välj befintlig kontakt...</option>
-                        {contactsForSync.map((contact) => (
-                          <option key={contact.id} value={contact.id}>
-                            {contact.name}{contact.email ? ` (${contact.email})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => handleLinkToContact(event.id)}
-                        className="btn-secondary"
-                      >
-                        Koppla till kontakt
-                      </button>
+                    <div className="flex flex-col gap-3">
+                        {unmatchedEvents.length === 0 ? (
+                            <div className="text-center py-10 text-[var(--text-tertiary)]">
+                                <p>All caught up!</p>
+                                <p className="text-sm mt-1">No unmatched calendar events.</p>
+                            </div>
+                        ) : (
+                            unmatchedEvents.map((event) => (
+                                <div key={event.id} className="p-3 bg-[var(--bg-app)] rounded-lg border border-[var(--border-subtle)] hover:border-blue-300 transition-colors">
+                                    <p className="font-semibold text-sm mb-1">{event.title}</p>
+                                    <p className="text-xs text-[var(--text-tertiary)] mb-3">
+                                        {new Date(event.startAt).toLocaleString()}
+                                    </p>
+                                    
+                                    <div className="flex flex-col gap-2">
+                                        <select
+                                            value={linkSelections[event.id] || ''}
+                                            onChange={(e) => setLinkSelections((prev) => ({ ...prev, [event.id]: e.target.value }))}
+                                            className="text-xs p-1.5 rounded border border-[var(--border-medium)] bg-[var(--surface)] w-full"
+                                        >
+                                            <option value="">Link to existing...</option>
+                                            {contactsForSync.map((c) => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                        <button 
+                                            onClick={() => handleLinkToContact(event.id)}
+                                            className="btn btn-secondary text-xs w-full py-1 h-8"
+                                            disabled={!linkSelections[event.id]}
+                                        >
+                                            Link
+                                        </button>
+                                        
+                                        <div className="h-px bg-[var(--border-subtle)] my-1"></div>
+                                        
+                                        <input
+                                            type="text"
+                                            placeholder="New contact name"
+                                            value={createDrafts[event.id]?.name || ''}
+                                            onChange={(e) => handleCreateDraftChange(event.id, 'name', e.target.value)}
+                                            className="text-xs p-1.5 rounded border border-[var(--border-medium)] bg-[var(--surface)] w-full"
+                                        />
+                                        <button 
+                                            onClick={() => handleCreateAndLinkContact(event.id)}
+                                            className="btn btn-primary text-xs w-full py-1 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 border-none"
+                                        >
+                                            Create & Link
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <input
-                        type="text"
-                        value={createDrafts[event.id]?.name || ''}
-                        onChange={(e) => handleCreateDraftChange(event.id, 'name', e.target.value)}
-                        placeholder="Namn för ny kontakt"
-                        className="input-field"
-                      />
-                      <input
-                        type="email"
-                        value={createDrafts[event.id]?.email || ''}
-                        onChange={(e) => handleCreateDraftChange(event.id, 'email', e.target.value)}
-                        placeholder="E-post (valfritt)"
-                        className="input-field"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleCreateAndLinkContact(event.id)}
-                        className="btn-primary"
-                      >
-                        Skapa kontakt + koppla
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+            </div>
         )}
-
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">📋 Status Legend</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-green-100 rounded-lg border-l-4 border-green-500">
-              <p className="font-semibold">🟢 Active</p>
-              <p className="text-sm text-gray-600">Activity scheduled in the future</p>
-            </div>
-            <div className="p-4 bg-yellow-100 rounded-lg border-l-4 border-yellow-500">
-              <p className="font-semibold">🟡 Recent</p>
-              <p className="text-sm text-gray-600">Contacted within 4 weeks, no follow-up scheduled</p>
-            </div>
-            <div className="p-4 bg-red-100 rounded-lg border-l-4 border-red-500">
-              <p className="font-semibold">🔴 Needs Attention</p>
-              <p className="text-sm text-gray-600">No contact for more than 4 weeks</p>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   )
 }

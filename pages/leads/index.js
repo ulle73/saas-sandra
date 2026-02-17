@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import AppShell from '../../components/AppShell'
 
 function toStatusLabel(status) {
   if (status === 'accepted') return 'Accepted'
@@ -10,10 +11,10 @@ function toStatusLabel(status) {
 }
 
 function toStatusBadgeClass(status) {
-  if (status === 'accepted') return 'bg-blue-100 text-blue-700'
-  if (status === 'rejected') return 'bg-red-100 text-red-700'
-  if (status === 'converted') return 'bg-green-100 text-green-700'
-  return 'bg-yellow-100 text-yellow-700'
+  if (status === 'accepted') return 'badge badge-status-accepted'
+  if (status === 'rejected') return 'badge badge-status-rejected'
+  if (status === 'converted') return 'badge badge-status-converted'
+  return 'badge badge-status-new'
 }
 
 function buildLinkedInCompanySearchUrl(companyName) {
@@ -48,9 +49,9 @@ function getPriorityLabel(item) {
 }
 
 function getPriorityClass(priority) {
-  if (priority === 'P1') return 'bg-red-100 text-red-700 border-red-200'
-  if (priority === 'P2') return 'bg-amber-100 text-amber-700 border-amber-200'
-  return 'bg-sky-100 text-sky-700 border-sky-200'
+  if (priority === 'P1') return 'badge badge-priority-p1'
+  if (priority === 'P2') return 'badge badge-priority-p2'
+  return 'badge badge-priority-p3'
 }
 
 function getSourceQuality(item) {
@@ -69,9 +70,9 @@ function getSourceQuality(item) {
 }
 
 function getSourceQualityClass(quality) {
-  if (quality === 'High') return 'bg-emerald-100 text-emerald-700 border-emerald-200'
-  if (quality === 'Low') return 'bg-rose-100 text-rose-700 border-rose-200'
-  return 'bg-gray-100 text-gray-700 border-gray-200'
+  if (quality === 'High') return 'badge badge-quality-high'
+  if (quality === 'Low') return 'badge badge-quality-low'
+  return 'badge badge-quality-medium'
 }
 
 function getConfidenceLabel(item) {
@@ -79,6 +80,13 @@ function getConfidenceLabel(item) {
   if (score >= 80) return 'Hög'
   if (score >= 60) return 'Medel'
   return 'Låg'
+}
+
+function getConfidenceClass(item) {
+  const score = Number(item?.score || 0)
+  if (score >= 80) return 'badge badge-confidence-high'
+  if (score >= 60) return 'badge badge-confidence-medium'
+  return 'badge badge-confidence-low'
 }
 
 function formatAgeLabel(timestamp) {
@@ -94,14 +102,14 @@ function formatAgeLabel(timestamp) {
 }
 
 function getContactQuality(topContact) {
-  if (!topContact) return { label: 'Ingen', className: 'bg-gray-100 text-gray-700 border-gray-200', score: 0 }
+  if (!topContact) return { label: 'Ingen', className: 'badge badge-contact-none', score: 0 }
   const hasEmail = Boolean(topContact.email)
   const hasPhone = Boolean(topContact.phone)
   const hasLinkedIn = Boolean(topContact.linkedin_url || topContact.profile_url)
-  if (hasEmail && hasPhone) return { label: 'Stark', className: 'bg-emerald-100 text-emerald-700 border-emerald-200', score: 3 }
-  if (hasEmail || hasPhone) return { label: 'Bra', className: 'bg-blue-100 text-blue-700 border-blue-200', score: 2 }
-  if (hasLinkedIn) return { label: 'Bas', className: 'bg-amber-100 text-amber-700 border-amber-200', score: 1 }
-  return { label: 'Ingen', className: 'bg-gray-100 text-gray-700 border-gray-200', score: 0 }
+  if (hasEmail && hasPhone) return { label: 'Stark', className: 'badge badge-contact-strong', score: 3 }
+  if (hasEmail || hasPhone) return { label: 'Bra', className: 'badge badge-contact-bra', score: 2 }
+  if (hasLinkedIn) return { label: 'Bas', className: 'badge badge-contact-bas', score: 1 }
+  return { label: 'Ingen', className: 'badge badge-contact-none', score: 0 }
 }
 
 function getNextAction(item, topContact) {
@@ -130,7 +138,7 @@ function toContactCandidates(item) {
   return parsed.filter((entry) => entry && typeof entry === 'object')
 }
 
-export default function Leads({ session }) {
+export default function Leads({ session, theme, toggleTheme }) {
   const router = useRouter()
   const [items, setItems] = useState([])
   const [companies, setCompanies] = useState([])
@@ -141,6 +149,7 @@ export default function Leads({ session }) {
   const [actionMessage, setActionMessage] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState('')
   const [expandedContactsById, setExpandedContactsById] = useState({})
+  const [showAllRemaining, setShowAllRemaining] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -201,6 +210,10 @@ export default function Leads({ session }) {
 
   const topTodayItems = useMemo(() => filteredItems.slice(0, 5), [filteredItems])
   const remainingItems = useMemo(() => filteredItems.slice(5), [filteredItems])
+  const visibleRemainingItems = useMemo(() => {
+    if (showAllRemaining) return remainingItems
+    return remainingItems.slice(0, 6)
+  }, [remainingItems, showAllRemaining])
 
   const summary = useMemo(() => {
     const all = items.length
@@ -374,66 +387,58 @@ export default function Leads({ session }) {
     const isBusy = actionLoadingId === item.id
 
     return (
-      <li key={item.id} className="card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+      <li key={item.id} className="card p-5 page-stack">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">{item.company_name}</h2>
-            <p className="text-sm text-gray-600">
+            <p className="section-meta">
               Rekommenderad kontakt: {item.recommended_person_title || 'HR-chef / VD'}
             </p>
           </div>
           <div className="text-right">
-            <span className={`inline-block px-2 py-1 rounded text-sm ${toStatusBadgeClass(item.status)}`}>
+            <span className={toStatusBadgeClass(item.status)}>
               {toStatusLabel(item.status)}
             </span>
-            <p className="text-sm text-gray-600 mt-1">Score: {item.score}/100</p>
+            <p className="section-meta mt-1">Score: {item.score}/100</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-3 text-xs">
-          <span className={`px-2 py-1 rounded border ${getPriorityClass(priorityLabel)}`}>{priorityLabel}</span>
-          <span className={`px-2 py-1 rounded border ${contactQuality.className}`}>Kontaktkvalitet: {contactQuality.label}</span>
-          <span className={`px-2 py-1 rounded border ${getSourceQualityClass(sourceQuality)}`}>Källkvalitet: {sourceQuality}</span>
-          <span className="px-2 py-1 rounded border bg-indigo-100 text-indigo-700 border-indigo-200">Confidence: {getConfidenceLabel(item)}</span>
-          <span className="px-2 py-1 rounded border bg-gray-100 text-gray-700 border-gray-200">{formatAgeLabel(item.source_published_at)}</span>
+        <div className="flex flex-wrap gap-2">
+          <span className={getPriorityClass(priorityLabel)}>{priorityLabel}</span>
+          <span className={contactQuality.className}>Kontaktkvalitet: {contactQuality.label}</span>
+          <span className={getSourceQualityClass(sourceQuality)}>Källkvalitet: {sourceQuality}</span>
+          <span className={getConfidenceClass(item)}>Confidence: {getConfidenceLabel(item)}</span>
+          <span className="badge badge-confidence-medium">{formatAgeLabel(item.source_published_at)}</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 text-sm">
-          <p><span className="font-medium">Signal:</span> {item.growth_signal || '-'}</p>
-          <p><span className="font-medium">Anställda (est):</span> {item.employee_count_estimate || '-'}</p>
-          <p><span className="font-medium">Domän:</span> {item.company_domain || '-'}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <p><strong>Signal:</strong> {item.growth_signal || '-'}</p>
+          <p><strong>Anställda (est):</strong> {item.employee_count_estimate || '-'}</p>
+          <p><strong>Domän:</strong> {item.company_domain || '-'}</p>
         </div>
 
-        <div className="mb-3 p-3 rounded border bg-gray-50">
-          <p className="text-sm font-semibold text-gray-900 mb-1">Varför nu</p>
-          <p className="text-gray-900 font-medium mb-1">{item.reason}</p>
-          <p className="text-gray-700">{item.pitch}</p>
+        <div className="panel-soft p-3">
+          <p className="text-sm font-semibold mb-1">Nästa action</p>
+          <p className="text-sm">{nextAction}</p>
         </div>
 
-        <div className="mb-3 p-3 rounded border bg-blue-50 border-blue-100">
-          <p className="text-sm font-semibold text-blue-900 mb-1">Nästa action</p>
-          <p className="text-sm text-blue-900">{nextAction}</p>
-        </div>
-
-        <div className="mb-3">
-          <p className="text-sm font-semibold text-gray-900 mb-2">Kontaktpersoner ({contactCandidates.length})</p>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Kontaktpersoner ({contactCandidates.length})</p>
           {!topContact ? (
-            <p className="text-sm text-gray-500">Inga personer hittades ännu för detta bolag.</p>
+            <p className="muted text-sm">Inga personer hittades ännu för detta bolag.</p>
           ) : (
-            <div className="bg-gray-50 border rounded p-3 text-sm">
+            <div className="panel-soft p-3 text-sm">
               <p className="font-medium">{topContact.name || 'Okänt namn'}</p>
-              <p className="text-gray-700">{topContact.title || '-'}</p>
-              <div className="text-gray-600 mt-1">
-                <p>Plats: {topContact.location || '-'}</p>
-                <p>E-post: {topContact.email || '-'}</p>
-                <p>Telefon: {topContact.phone || '-'}</p>
-              </div>
+              <p>{topContact.title || '-'}</p>
+              <p className="muted mt-1">Plats: {topContact.location || '-'}</p>
+              <p className="muted">E-post: {topContact.email || '-'}</p>
+              <p className="muted">Telefon: {topContact.phone || '-'}</p>
               {topContact.linkedin_url || topContact.profile_url ? (
                 <a
                   href={topContact.linkedin_url || topContact.profile_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mt-1 text-blue-600 hover:underline"
+                  className="inline-link inline-block mt-1"
                 >
                   Öppna LinkedIn-profil
                 </a>
@@ -442,17 +447,17 @@ export default function Leads({ session }) {
           )}
 
           {extraContacts.length > 0 ? (
-            <div className="mt-2">
+            <div>
               <button onClick={() => toggleContacts(item.id)} className="btn-secondary">
                 {isExpanded ? 'Dölj fler kontakter' : `Visa fler kontakter (${extraContacts.length})`}
               </button>
               {isExpanded ? (
                 <ul className="space-y-2 mt-2">
                   {extraContacts.map((person, index) => (
-                    <li key={`${item.id}-person-${index + 1}`} className="bg-white border rounded p-2 text-sm">
+                    <li key={`${item.id}-person-${index + 1}`} className="panel-soft p-2 text-sm">
                       <p className="font-medium">{person.name || 'Okänt namn'}</p>
-                      <p className="text-gray-700">{person.title || '-'}</p>
-                      <p className="text-gray-600">E-post: {person.email || '-'} · Telefon: {person.phone || '-'}</p>
+                      <p>{person.title || '-'}</p>
+                      <p className="muted">E-post: {person.email || '-'} · Telefon: {person.phone || '-'}</p>
                     </li>
                   ))}
                 </ul>
@@ -461,14 +466,21 @@ export default function Leads({ session }) {
           ) : null}
         </div>
 
-        <div className="text-sm text-gray-600 mb-4">
-          <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            Källa: {item.source_title}
-          </a>
-          {item.source_published_at && (
-            <span> · {new Date(item.source_published_at).toLocaleString()}</span>
-          )}
-        </div>
+        <details className="disclosure">
+          <summary>Visa lead-detaljer</summary>
+          <div className="disclosure-content space-y-2 text-sm">
+            <p><strong>Reason:</strong> {item.reason}</p>
+            <p><strong>Pitch:</strong> {item.pitch}</p>
+            <p>
+              <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="inline-link">
+                Källa: {item.source_title}
+              </a>
+              {item.source_published_at && (
+                <span className="muted"> · {new Date(item.source_published_at).toLocaleString()}</span>
+              )}
+            </p>
+          </div>
+        </details>
 
         <div className="flex flex-wrap gap-2">
           <a href={linkedinCompanyUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary">
@@ -499,38 +511,37 @@ export default function Leads({ session }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold">🎯 AI Lead Discovery</h1>
-          <button onClick={() => router.back()} className="btn-secondary">Back</button>
-        </div>
-      </nav>
+    <AppShell
+      title="AI Lead Discovery"
+      session={session}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      actions={<button onClick={loadData} className="btn-secondary">Refresh</button>}
+    >
+      <div className="page-stack">
+        {error && <p className="text-red-600">{error}</p>}
+        {actionMessage && <p className="text-blue-700">{actionMessage}</p>}
 
-      <main className="max-w-6xl mx-auto py-8">
-        {error && <p className="text-red-600 mb-4">{error}</p>}
-        {actionMessage && <p className="text-blue-700 mb-4">{actionMessage}</p>}
+        <section className="kpi-grid">
+          <div className="kpi-card">
+            <p className="kpi-label">Alla leads</p>
+            <p className="kpi-value">{summary.all}</p>
+          </div>
+          <div className="kpi-card">
+            <p className="kpi-label">Nya</p>
+            <p className="kpi-value">{summary.fresh}</p>
+          </div>
+          <div className="kpi-card">
+            <p className="kpi-label">P1</p>
+            <p className="kpi-value">{summary.p1}</p>
+          </div>
+          <div className="kpi-card">
+            <p className="kpi-label">Konverterade</p>
+            <p className="kpi-value">{summary.converted}</p>
+          </div>
+        </section>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <div className="card p-3">
-            <p className="text-xs text-gray-500">Alla leads</p>
-            <p className="text-2xl font-semibold">{summary.all}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-xs text-gray-500">Nya</p>
-            <p className="text-2xl font-semibold">{summary.fresh}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-xs text-gray-500">P1</p>
-            <p className="text-2xl font-semibold">{summary.p1}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-xs text-gray-500">Konverterade</p>
-            <p className="text-2xl font-semibold">{summary.converted}</p>
-          </div>
-        </div>
-
-        <div className="card p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Status</label>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input-field">
@@ -553,18 +564,18 @@ export default function Leads({ session }) {
             />
           </div>
           <div className="flex items-end">
-            <button onClick={loadData} className="btn-secondary w-full">Refresh</button>
+            <button onClick={loadData} className="btn-secondary w-full">Refresh Data</button>
           </div>
-        </div>
+        </section>
 
         {filteredItems.length === 0 ? (
-          <p className="text-center text-gray-500">Inga discovery-leads matchar filtret.</p>
+          <p className="card p-6 muted">Inga discovery-leads matchar filtret.</p>
         ) : (
           <>
-            <section className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">Top 5 idag</h2>
-                <p className="text-sm text-gray-500">Mest prioriterade först</p>
+            <section className="page-stack">
+              <div className="flex items-center justify-between">
+                <h2 className="section-title">Top 5 idag</h2>
+                <p className="section-meta">Mest prioriterade först</p>
               </div>
               <ul className="space-y-4">
                 {topTodayItems.map((item) => renderLeadCard(item))}
@@ -572,16 +583,23 @@ export default function Leads({ session }) {
             </section>
 
             {remainingItems.length > 0 ? (
-              <section>
-                <h2 className="text-lg font-semibold mb-3">Övriga leads</h2>
+              <section className="page-stack">
+                <div className="flex items-center justify-between">
+                  <h2 className="section-title">Övriga leads</h2>
+                  {remainingItems.length > 6 ? (
+                    <button type="button" className="btn-secondary" onClick={() => setShowAllRemaining((current) => !current)}>
+                      {showAllRemaining ? 'Visa färre' : `Visa fler (${remainingItems.length - 6})`}
+                    </button>
+                  ) : null}
+                </div>
                 <ul className="space-y-4">
-                  {remainingItems.map((item) => renderLeadCard(item))}
+                  {visibleRemainingItems.map((item) => renderLeadCard(item))}
                 </ul>
               </section>
             ) : null}
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   )
 }

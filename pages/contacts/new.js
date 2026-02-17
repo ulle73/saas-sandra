@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import AppShell from '../../components/AppShell'
 
-export default function NewContact({ session }) {
+export default function NewContact({ session, theme, toggleTheme }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -66,16 +67,14 @@ export default function NewContact({ session }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Simple Nav */}
-      <nav className="bg-white shadow p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold">✏️ New Contact</h1>
-          <button onClick={() => router.back()} className="btn-secondary">Back</button>
-        </div>
-      </nav>
-
-      <main className="max-w-2xl mx-auto py-8">
+    <AppShell
+      title="New Contact"
+      session={session}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      actions={<button type="button" onClick={() => router.push('/contacts')} className="btn-secondary">Back</button>}
+    >
+      <div className="max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-5 card p-6">
           {error && <p className="text-red-600">{error}</p>}
           <div>
@@ -131,9 +130,9 @@ export default function NewContact({ session }) {
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Saving...' : 'Create Contact'}
           </button>
-          {loadingCompanies && <p className="text-sm text-gray-500">Loading companies...</p>}
+          {loadingCompanies && <p className="text-sm muted">Loading companies...</p>}
         </form>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   )
 }

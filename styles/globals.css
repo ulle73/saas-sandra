@@ -1,77 +1,274 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+@import "tailwindcss";
 
-/* Status color classes */
-.status-green {
-  background-color: #ecfdf5;
-  border-left: 4px solid #10b981;
+:root {
+  /* Light Theme */
+  --bg-app: #f8fafc; /* Very light cool gray */
+  --bg-panel: #ffffff;
+  --bg-panel-translucent: rgba(255, 255, 255, 0.85);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  
+  --primary: #3b82f6; /* Blue 500 */
+  --primary-hover: #2563eb;
+  --primary-subtle: #eff6ff; /* Blue 50 */
+  --primary-text: #1e40af; /* Blue 800 */
+
+  --accent: #8b5cf6; /* Violet 500 */
+  --accent-subtle: #f5f3ff;
+  
+  --success: #10b981;
+  --success-subtle: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-subtle: #fffbeb;
+  --danger: #ef4444;
+  --danger-subtle: #fef2f2;
+
+  --nav-bg: #0f172a; /* Slate 900 for sidebar in light mode too for contrast */
+  --nav-text: #94a3b8;
+  --nav-text-active: #ffffff;
+  --nav-item-hover: rgba(255, 255, 255, 0.1);
+  --nav-item-active: #3b82f6;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
-.status-yellow {
-  background-color: #fffbeb;
-  border-left: 4px solid #f59e0b;
+[data-theme='dark'] {
+  /* Dark Theme */
+  --bg-app: #020617; /* Slate 950 */
+  --bg-panel: #0f172a; /* Slate 900 */
+  --bg-panel-translucent: rgba(15, 23, 42, 0.85);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #64748b;
+  
+  --border-subtle: #1e293b;
+  --border-medium: #334155;
+  
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-subtle: rgba(59, 130, 246, 0.15);
+  --primary-text: #dbeafe;
+
+  --accent: #a78bfa;
+  --accent-subtle: rgba(139, 92, 246, 0.15);
+  
+  --success: #34d399;
+  --success-subtle: rgba(16, 185, 129, 0.15);
+  --warning: #fbbf24;
+  --warning-subtle: rgba(245, 158, 11, 0.15);
+  --danger: #f87171;
+  --danger-subtle: rgba(239, 68, 68, 0.15);
+
+  --nav-bg: #020617; /* Deepest slate */
+  --nav-text: #94a3b8;
+  --nav-text-active: #f8fafc;
+  --nav-item-hover: rgba(255, 255, 255, 0.05);
+  --nav-item-active: #3b82f6;
 }
 
-.status-red {
-  background-color: #fef2f2;
-  border-left: 4px solid #ef4444;
-}
-/* General styles */
 body {
-  background-color: #f9fafb; /* gray-50 */
-  color: #111827; /* gray-900 */
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: var(--bg-panel-translucent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-header {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+[data-theme='dark'] .glass-header {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Components */
+.btn {
+  /* Replaced @apply with standard CSS */
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Outfit', sans-serif;
 }
 
 .btn-primary {
-  background-color: #2563eb; /* blue-600 */
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
 }
-
 .btn-primary:hover {
-  background-color: #1d4ed8; /* blue-700 */
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4);
+}
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .btn-secondary {
-  background-color: #e5e7eb; /* gray-200 */
-  color: #111827; /* gray-900 */
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
 }
-
 .btn-secondary:hover {
-  background-color: #d1d5db; /* gray-300 */
+  border-color: var(--text-tertiary);
+  background-color: var(--bg-app);
 }
 
 .card {
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  border-radius: 0.5rem;
+  /* Replaced @apply with standard CSS */
   padding: 1.5rem;
+  border-radius: 1rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
 }
 
 .input-field {
-  border: 1px solid #d1d5db; /* gray-300 */
-  border-radius: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  /* Replaced @apply with standard CSS */
   width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
 }
 
 .input-field:focus {
   outline: none;
-  box-shadow: 0 0 0 2px #2563eb; /* blue-500 */
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-subtle);
 }
 
-.table-header {
-  background-color: #f3f4f6; /* gray-100 */
-  text-align: left;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
+/* Calendar Specifics */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background-color: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  overflow: hidden;
 }
 
-.table-cell {
-  padding: 0.5rem 1rem;
-  border-top: 1px solid #e5e7eb; /* gray-200 */
+.calendar-cell {
+  background-color: var(--bg-panel);
+  min-height: 120px;
+  padding: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.calendar-cell:hover {
+  background-color: var(--bg-app);
+}
+
+.calendar-day-header {
+  /* Replaced @apply */
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  background-color: var(--bg-panel);
+}
+
+.event-pill {
+  /* Replaced @apply */
+  font-size: 0.75rem;
+  line-height: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  background-color: var(--primary-subtle);
+  color: var(--primary-text);
+  border-left: 3px solid var(--primary);
+}
+
+.event-pill:hover {
+  filter: brightness(0.95);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
 }
