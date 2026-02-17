@@ -106,6 +106,8 @@ create table if not exists public.lead_discovery_items (
   source_title text not null,
   source_url text not null,
   source_published_at timestamptz,
+  linkedin_company_id text,
+  linkedin_company_url text,
   contact_candidates jsonb not null default '[]'::jsonb,
   status text not null default 'new' check (status in ('new', 'accepted', 'rejected', 'converted')),
   reviewed_at timestamptz,
@@ -139,6 +141,12 @@ alter table public.lead_discovery_items
 
 alter table public.lead_discovery_items
   add column if not exists contact_candidates jsonb not null default '[]'::jsonb;
+
+alter table public.lead_discovery_items
+  add column if not exists linkedin_company_id text;
+
+alter table public.lead_discovery_items
+  add column if not exists linkedin_company_url text;
 
 alter table public.weekly_leads
   add column if not exists prospect_company text;

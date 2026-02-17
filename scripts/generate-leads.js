@@ -43,6 +43,7 @@ const MAX_SOURCE_ARTICLES = parsePositiveInt(process.env.LEADS_DISCOVERY_MAX_ART
 const OPENAI_MODEL = process.env.LEADS_DISCOVERY_MODEL || 'gpt-4o-mini'
 const LEADS_DEBUG = String(process.env.LEADS_DEBUG || 'false').toLowerCase() === 'true'
 const RECENT_DUPLICATE_WINDOW_DAYS = parsePositiveInt(process.env.LEADS_DISCOVERY_DUPLICATE_WINDOW_DAYS, 60, 14, 180)
+const DISCOVERY_INCLUDE_NEWSAPI = String(process.env.LEADS_DISCOVERY_INCLUDE_NEWSAPI || 'true').toLowerCase() === 'true'
 const DISCOVERY_INCLUDE_GOOGLE_RSS = String(process.env.LEADS_DISCOVERY_INCLUDE_GOOGLE_RSS || 'true').toLowerCase() === 'true'
 const RAPIDAPI_TIMEOUT_MS = parsePositiveInt(process.env.RAPIDAPI_TIMEOUT_MS, 30000, 5000, 120000)
 const RAPIDAPI_MAX_RETRIES = parsePositiveInt(process.env.RAPIDAPI_MAX_RETRIES, 2, 0, 5)
@@ -473,38 +474,57 @@ function extractDomainFromCandidate(companyDomain, sourceUrl) {
 async function fetchDiscoveryArticles() {
   const fromDate = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const collected = []
+  const stats = {
+    newsapiRequests: 0,
+    newsapiArticles: 0,
+    googleRssRequests: 0,
+    googleRssArticles: 0,
+  }
+  let newsApiRateLimited = false
 
   for (const query of DISCOVERY_QUERIES) {
-    const encodedQuery = encodeURIComponent(query)
-    const url = `https://newsapi.org/v2/everything?q=${encodedQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=sv&from=${fromDate}&sortBy=publishedAt&pageSize=${MAX_SOURCE_ARTICLES}`
-    let response
-    let payload
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      response = await fetchWithTimeout(url)
-      // eslint-disable-next-line no-await-in-loop
-      payload = await response.json()
-    } catch (error) {
-      console.error(`NewsAPI fetch timeout/error for query "${query}":`, error.message)
-      continue
-    }
+    if (DISCOVERY_INCLUDE_NEWSAPI && !newsApiRateLimited) {
+      const encodedQuery = encodeURIComponent(query)
+      const url = `https://newsapi.org/v2/everything?q=${encodedQuery}&apiKey=${NEWSAPI_KEY}&searchIn=title,description&language=sv&from=${fromDate}&sortBy=publishedAt&pageSize=${MAX_SOURCE_ARTICLES}`
+      let response
+      let payload
+      try {
+        stats.newsapiRequests += 1
+        // eslint-disable-next-line no-await-in-loop
+        response = await fetchWithTimeout(url)
+        // eslint-disable-next-line no-await-in-loop
+        payload = await response.json()
+      } catch (error) {
+        console.error(`NewsAPI fetch timeout/error for query "${query}":`, error.message)
+      }
 
-    if (!response.ok) {
-      console.error(`NewsAPI error for query "${query}":`, payload.message || response.statusText)
-    } else {
-      collected.push(...(payload.articles || []))
+      if (response && !response.ok) {
+        const message = String(payload?.message || response.statusText || '')
+        console.error(`NewsAPI error for query "${query}":`, message)
+        if (response.status === 429 || /too many requests|limited to 100 requests/i.test(message)) {
+          newsApiRateLimited = true
+          console.warn('NewsAPI quota reached. Continuing with Google RSS only for remaining queries.')
+        }
+      } else if (response && payload) {
+        const articles = payload.articles || []
+        stats.newsapiArticles += articles.length
+        collected.push(...articles)
+      }
     }
 
     if (DISCOVERY_INCLUDE_GOOGLE_RSS) {
       const googleQuery = encodeURIComponent(`${query} when:${LOOKBACK_DAYS}d`)
       const rssUrl = `https://news.google.com/rss/search?q=${googleQuery}&hl=sv&gl=SE&ceid=SE:sv`
       try {
+        stats.googleRssRequests += 1
         // eslint-disable-next-line no-await-in-loop
         const rssResponse = await fetchWithTimeout(rssUrl)
         // eslint-disable-next-line no-await-in-loop
         const rssText = await rssResponse.text()
         if (rssResponse.ok) {
-          collected.push(...parseGoogleNewsRss(rssText))
+          const rssArticles = parseGoogleNewsRss(rssText)
+          stats.googleRssArticles += rssArticles.length
+          collected.push(...rssArticles)
         }
       } catch (error) {
         console.error(`Google RSS fetch timeout/error for query "${query}":`, error.message)
@@ -518,10 +538,16 @@ async function fetchDiscoveryArticles() {
     if (!byUrl.has(article.url)) byUrl.set(article.url, article)
   }
 
-  return [...byUrl.values()]
+  const deduped = [...byUrl.values()]
     .filter((article) => new Date(article.publishedAt).getTime() >= new Date(fromDate).getTime())
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .slice(0, MAX_SOURCE_ARTICLES)
+
+  console.log(
+    `[DISCOVERY] sources: newsapi_requests=${stats.newsapiRequests}, newsapi_articles=${stats.newsapiArticles}, google_rss_requests=${stats.googleRssRequests}, google_rss_articles=${stats.googleRssArticles}, deduped=${deduped.length}`
+  )
+
+  return deduped
 }
 
 function normalizeSpacing(value) {
@@ -1423,6 +1449,27 @@ async function persistContactCandidatesForLead({ userId, candidate, contactCandi
   throw error
 }
 
+async function persistLinkedInCompanyMatchForLead({ userId, candidate, companyInfo }) {
+  const payload = {
+    linkedin_company_id: String(companyInfo.company_id || ''),
+    linkedin_company_url: companyInfo.company_url || null,
+  }
+
+  const { error } = await supabase
+    .from('lead_discovery_items')
+    .update(payload)
+    .eq('user_id', userId)
+    .eq('company_name', candidate.companyName)
+    .eq('source_url', candidate.sourceUrl)
+
+  if (!error) return
+  if (/column .*linkedin_company_id|column .*linkedin_company_url/i.test(String(error.message || ''))) {
+    console.warn('lead_discovery_items.linkedin_company_id/linkedin_company_url saknas i databasen. Kör senaste supabase/schema.sql.')
+    return
+  }
+  throw error
+}
+
 async function fetchUserIds() {
   const [{ data: companies, error: companiesError }, { data: contacts, error: contactsError }, { data: discovery, error: discoveryError }] = await Promise.all([
     supabase.from('companies').select('user_id'),
@@ -1578,12 +1625,12 @@ async function generateForUser(userId, candidates) {
 async function ensureDiscoverySchema() {
   const { error } = await supabase
     .from('lead_discovery_items')
-    .select('company_name, status, source_url, contact_candidates')
+    .select('company_name, status, source_url, contact_candidates, linkedin_company_id, linkedin_company_url')
     .limit(1)
 
   if (error) {
     throw new Error(
-      'Database schema is outdated for AI lead discovery. Apply latest supabase/schema.sql (lead_discovery_items + contact_candidates).'
+      'Database schema is outdated for AI lead discovery. Apply latest supabase/schema.sql (lead_discovery_items + contact_candidates + linkedin_company_id/url).'
     )
   }
 }
@@ -1639,6 +1686,12 @@ async function runCompanyPeopleFlow(userId, selectedCandidates) {
         requestCounters,
       })
       // eslint-disable-next-line no-await-in-loop
+      await persistLinkedInCompanyMatchForLead({
+        userId,
+        candidate,
+        companyInfo,
+      })
+      // eslint-disable-next-line no-await-in-loop
       await persistContactCandidatesForLead({
         userId,
         candidate,
@@ -1660,7 +1713,7 @@ async function runCompanyPeopleFlow(userId, selectedCandidates) {
 
 async function main() {
   console.log('Generating AI discovery leads (news lookback + company people flow)...')
-  console.log(`Discovery config: lookback_days=${LOOKBACK_DAYS}, max_articles=${MAX_SOURCE_ARTICLES}, google_rss=${DISCOVERY_INCLUDE_GOOGLE_RSS}`)
+  console.log(`Discovery config: lookback_days=${LOOKBACK_DAYS}, max_articles=${MAX_SOURCE_ARTICLES}, newsapi=${DISCOVERY_INCLUDE_NEWSAPI}, google_rss=${DISCOVERY_INCLUDE_GOOGLE_RSS}`)
   console.log(`Discovery queries (${DISCOVERY_QUERIES.length}): ${DISCOVERY_QUERIES.join(' || ')}`)
   await ensureDiscoverySchema()
   const [userIds, articles] = await Promise.all([fetchUserIds(), fetchDiscoveryArticles()])
