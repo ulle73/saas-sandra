@@ -106,6 +106,7 @@ create table if not exists public.lead_discovery_items (
   source_title text not null,
   source_url text not null,
   source_published_at timestamptz,
+  contact_candidates jsonb not null default '[]'::jsonb,
   status text not null default 'new' check (status in ('new', 'accepted', 'rejected', 'converted')),
   reviewed_at timestamptz,
   converted_company_id uuid references public.companies (id) on delete set null,
@@ -135,6 +136,9 @@ alter table public.lead_discovery_items
 
 alter table public.lead_discovery_items
   add column if not exists converted_contact_id uuid references public.contacts (id) on delete set null;
+
+alter table public.lead_discovery_items
+  add column if not exists contact_candidates jsonb not null default '[]'::jsonb;
 
 alter table public.weekly_leads
   add column if not exists prospect_company text;

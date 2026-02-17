@@ -33,6 +33,23 @@ function normalizeName(value) {
   return String(value || '').trim().toLowerCase()
 }
 
+function toContactCandidates(item) {
+  const raw = item?.contact_candidates
+  const parsed = Array.isArray(raw)
+    ? raw
+    : (() => {
+      if (!raw) return []
+      try {
+        const json = JSON.parse(raw)
+        return Array.isArray(json) ? json : []
+      } catch {
+        return []
+      }
+    })()
+
+  return parsed.filter((entry) => entry && typeof entry === 'object')
+}
+
 export default function Leads({ session }) {
   const router = useRouter()
   const [items, setItems] = useState([])
@@ -175,8 +192,23 @@ export default function Leads({ session }) {
     setActionLoadingId(item.id)
     try {
       const companyId = await ensureCompany(item)
-      const linkedinPeopleUrl = buildLinkedInPeopleSearchUrl(item.company_name, item.recommended_person_title)
-      const draftName = `${item.recommended_person_title || 'HR-chef / VD'} (${item.company_name})`
+      const contactCandidates = toContactCandidates(item)
+      const topCandidate = contactCandidates[0]
+      const linkedinPeopleUrl = topCandidate?.linkedin_url || topCandidate?.profile_url || buildLinkedInPeopleSearchUrl(item.company_name, item.recommended_person_title)
+      const draftName = topCandidate?.name
+        || `${item.recommended_person_title || 'HR-chef / VD'} (${item.company_name})`
+      const draftNotesParts = [
+        `AI discovery lead. Källa: ${item.source_url}`,
+        `Reason: ${item.reason}`,
+      ]
+      if (topCandidate?.title) draftNotesParts.push(`Föreslagen roll: ${topCandidate.title}`)
+      if (topCandidate?.location) draftNotesParts.push(`Plats: ${topCandidate.location}`)
+      if (topCandidate?.email) draftNotesParts.push(`E-post: ${topCandidate.email}`)
+      if (topCandidate?.phone) draftNotesParts.push(`Telefon: ${topCandidate.phone}`)
+      if (topCandidate?.linkedin_url || topCandidate?.profile_url) {
+        draftNotesParts.push(`LinkedIn: ${topCandidate.linkedin_url || topCandidate.profile_url}`)
+      }
+      const draftNotes = draftNotesParts.join('\n')
 
       const { data: insertedContact, error: contactError } = await supabase
         .from('contacts')
@@ -185,7 +217,9 @@ export default function Leads({ session }) {
           company_id: companyId,
           name: draftName,
           linkedin_url: linkedinPeopleUrl,
-          notes: `AI discovery lead. Källa: ${item.source_url}\nReason: ${item.reason}`,
+          email: topCandidate?.email || null,
+          phone: topCandidate?.phone || null,
+          notes: draftNotes,
         })
         .select('id')
         .single()
@@ -268,6 +302,7 @@ export default function Leads({ session }) {
             {filteredItems.map((item) => {
               const linkedinCompanyUrl = buildLinkedInCompanySearchUrl(item.company_name)
               const linkedinPeopleUrl = buildLinkedInPeopleSearchUrl(item.company_name, item.recommended_person_title)
+              const contactCandidates = toContactCandidates(item)
               const isBusy = actionLoadingId === item.id
 
               return (
@@ -295,6 +330,40 @@ export default function Leads({ session }) {
 
                   <p className="text-gray-900 font-medium mb-1">{item.reason}</p>
                   <p className="text-gray-700 mb-2">{item.pitch}</p>
+
+                  <div className="mb-3">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">
+                      Kontaktpersoner ({contactCandidates.length})
+                    </p>
+                    {contactCandidates.length === 0 ? (
+                      <p className="text-sm text-gray-500">Inga personer hittades ännu för detta bolag.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {contactCandidates.map((person, index) => (
+                          <li key={`${item.id}-person-${index}`} className="bg-gray-50 border rounded p-2 text-sm">
+                            <p className="font-medium">{person.name || 'Okänt namn'}</p>
+                            <p className="text-gray-700">{person.title || '-'}</p>
+                            <div className="text-gray-600 mt-1">
+                              <p>Plats: {person.location || '-'}</p>
+                              <p>E-post: {person.email || '-'}</p>
+                              <p>Telefon: {person.phone || '-'}</p>
+                            </div>
+                            {person.linkedin_url || person.profile_url ? (
+                              <a
+                                href={person.linkedin_url || person.profile_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block mt-1 text-blue-600 hover:underline"
+                              >
+                                Öppna LinkedIn-profil
+                              </a>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
                   <div className="text-sm text-gray-600 mb-4">
                     <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                       Källa: {item.source_title}
