@@ -144,11 +144,6 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
       <div className="flex flex-col lg:flex-row gap-8 h-full">
         {/* Left Sidebar Info */}
         <aside className="w-full lg:w-72 flex flex-col gap-8">
-           <button className="w-full py-3.5 bg-primary text-white font-black rounded-xl shadow-xl shadow-primary/20 hover:bg-primary/90 flex items-center justify-center gap-2 transition-transform active:scale-95">
-              <span className="material-symbols-outlined">add</span>
-              Schedule Meeting
-           </button>
-
            <div className="space-y-6">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Upcoming Agenda</h3>
               {searchTerm && (
@@ -205,37 +200,26 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
 
         {/* Main Calendar Grid */}
         <div className="flex-1 min-w-0 flex flex-col gap-6">
-           <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                 <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    {currentDate.toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })}
-                 </h2>
-                 <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                    <button 
-                      onClick={() => changeMonth(-1)}
-                      className="p-2 text-slate-400 hover:text-primary transition-colors"
-                    >
-                       <span className="material-symbols-outlined">chevron_left</span>
-                    </button>
-                    <button 
-                      onClick={() => setCurrentDate(new Date())}
-                      className="px-4 py-1.5 text-xs font-black text-slate-600 dark:text-slate-300"
-                    >
-                      Today
-                    </button>
-                    <button 
-                      onClick={() => changeMonth(1)}
-                      className="p-2 text-slate-400 hover:text-primary transition-colors"
-                    >
-                       <span className="material-symbols-outlined">chevron_right</span>
-                    </button>
-                 </div>
-              </div>
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                 <button className="px-4 py-2 text-xs font-black rounded-lg bg-white dark:bg-slate-700 text-primary shadow-sm">Monthly</button>
-                 <button className="px-4 py-2 text-xs font-black rounded-lg text-slate-500 hover:text-slate-700">Weekly</button>
-                 <button className="px-4 py-2 text-xs font-black rounded-lg text-slate-500 hover:text-slate-700">Daily</button>
-              </div>
+           <div className="flex items-center justify-center">
+             <div className="flex items-center gap-2">
+                <button
+                  onClick={() => changeMonth(-1)}
+                  className="p-2 text-slate-400 hover:text-primary transition-colors"
+                  aria-label="Previous month"
+                >
+                   <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight min-w-[220px] text-center">
+                   {currentDate.toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })}
+                </h2>
+                <button
+                  onClick={() => changeMonth(1)}
+                  className="p-2 text-slate-400 hover:text-primary transition-colors"
+                  aria-label="Next month"
+                >
+                   <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+             </div>
            </div>
 
            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex-1">
