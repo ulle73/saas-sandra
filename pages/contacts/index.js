@@ -3,7 +3,8 @@ import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
 import AppShell from '../../components/AppShell'
-import { computeContactStatus, statusLabel } from '../../lib/contactStatus'
+import StatusBadge from '../../components/StatusBadge'
+import { computeContactStatus } from '../../lib/contactStatus'
 
 export default function Contacts({ session, theme, toggleTheme }) {
   const router = useRouter()
@@ -24,9 +25,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
   const fetchData = async () => {
     setLoading(true)
     setError('')
-
     try {
-      // Fetch contacts
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select('*, companies(id, name)')
@@ -40,41 +39,12 @@ export default function Contacts({ session, theme, toggleTheme }) {
         status: computeContactStatus(contact),
       }))
       setContacts(normalizedContacts)
-
     } catch (error) {
       console.error('Error fetching data:', error.message)
       setError(error.message)
     } finally {
       setLoading(false)
     }
-  }
-
-  const deleteContact = async (id) => {
-    if (!confirm('Are you sure you want to delete this contact?')) return
-    const { error: deleteError } = await supabase
-      .from('contacts')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', session.user.id)
-
-    if (deleteError) {
-      setError(deleteError.message)
-      return
-    }
-
-    fetchData()
-  }
-
-  const getStatusClass = (contact) => {
-    if (contact.status === 'green') return 'status-green'
-    if (contact.status === 'yellow') return 'status-yellow'
-    return 'status-red'
-  }
-
-  const getStatusBadgeClass = (status) => {
-    if (status === 'green') return 'badge badge-status-converted'
-    if (status === 'yellow') return 'badge badge-status-new'
-    return 'badge badge-status-rejected'
   }
 
   const filteredContacts = contacts.filter(c => {
@@ -85,95 +55,132 @@ export default function Contacts({ session, theme, toggleTheme }) {
     return matchesSearch && matchesFilter
   })
 
-  if (loading) {
-    return <div className="screen-center">Loading...</div>
-  }
+  if (loading) return null
 
   return (
     <AppShell
-      title={`Contacts (${filteredContacts.length})`}
+      title="Contacts"
       session={session}
       theme={theme}
-      onToggleTheme={toggleTheme}
-      actions={<Link href="/contacts/new" className="btn-primary">+ Add Contact</Link>}
+      toggleTheme={toggleTheme}
     >
-      <div className="card contact-filter-grid">
-        <input
-          type="text"
-          placeholder="Search contacts..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="input-field"
-        />
+      {/* Table Header Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Contacts</h1>
+          <p className="text-sm text-slate-500 mt-1">{contacts.length} total relationships managed</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-all">
+            <span className="material-symbols-outlined text-lg">file_download</span>
+            Export
+          </button>
+          <Link href="/contacts/new" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+            <span className="material-symbols-outlined text-lg">add</span>
+            Add Contact
+          </Link>
+        </div>
+      </div>
+
+      {/* Filters Area */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-center">
+        <div className="flex-1 min-w-[300px] relative group">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+          <input
+            type="text"
+            placeholder="Search by name, email, or company..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm transition-all"
+          />
+        </div>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="input-field"
+          className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none cursor-pointer"
         >
-          <option value="all">All Status</option>
-          <option value="green">Active</option>
-          <option value="yellow">Recent</option>
-          <option value="red">Needs Attention</option>
+          <option value="all">All Statuses</option>
+          <option value="green">Upcoming Activity</option>
+          <option value="yellow">Recent Contact</option>
+          <option value="red">Stale (&gt;4 weeks)</option>
         </select>
-        <button onClick={fetchData} className="btn-secondary">Refresh</button>
       </div>
 
-      {error && <p className="form-error form-error-gap">{error}</p>}
+      {error && <p className="p-4 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 mb-6">{error}</p>}
 
-      <div className="card table-card">
-        <table className="data-table">
+      {/* Contact Data Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr>
-              <th className="table-header">Contact</th>
-              <th className="table-header">Company</th>
-              <th className="table-header">Status</th>
-              <th className="table-header">Last / Next</th>
-              <th className="table-header">Quick Contact</th>
-              <th className="table-header">Actions</th>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Contact Name</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Email Address</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Linked Company</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Relationship Status</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {filteredContacts.map((contact) => (
-              <tr key={contact.id} className={getStatusClass(contact)}>
-                <td className="table-cell">
-                  <p className="copy-strong">{contact.name}</p>
-                  <p className="tiny-copy muted">{contact.linkedin_url ? 'LinkedIn connected' : 'No LinkedIn URL'}</p>
-                </td>
-                <td className="table-cell">{contact.companies?.name || '-'}</td>
-                <td className="table-cell">
-                  <span className={getStatusBadgeClass(contact.status)}>
-                    {statusLabel(contact.status)}
-                  </span>
-                </td>
-                <td className="table-cell tiny-copy">
-                  <p>{contact.last_touchpoint ? new Date(contact.last_touchpoint).toLocaleDateString() : '-'}</p>
-                  <p className="muted">{contact.next_activity ? new Date(contact.next_activity).toLocaleDateString() : '-'}</p>
-                </td>
-                <td className="table-cell">
-                  <div className="quick-actions">
-                    {contact.email ? (
-                      <a href={`mailto:${contact.email}`} title={contact.email} className="icon-btn">✉</a>
-                    ) : (
-                      <span className="icon-btn icon-btn-disabled">✉</span>
-                    )}
-                    {contact.phone ? (
-                      <a href={`tel:${contact.phone}`} title={contact.phone} className="icon-btn">☎</a>
-                    ) : (
-                      <span className="icon-btn icon-btn-disabled">☎</span>
-                    )}
-                  </div>
-                </td>
-                <td className="table-cell">
-                  <Link href={`/contacts/${contact.id}`} className="table-link">Edit</Link>
-                  <button onClick={() => deleteContact(contact.id)} className="danger-link">Delete</button>
-                </td>
+          <tbody className="divide-y divide-slate-100">
+            {filteredContacts.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="px-6 py-12 text-center text-slate-400">No contacts found matching your criteria.</td>
               </tr>
-            ))}
+            ) : (
+              filteredContacts.map((contact) => (
+                <tr key={contact.id} className="hover:bg-slate-50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {contact.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{contact.name}</p>
+                        <p className="text-xs text-slate-500">Contact</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <a className="text-sm text-primary hover:underline font-medium" href={`mailto:${contact.email}`}>
+                      {contact.email}
+                    </a>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                    {contact.companies?.name || 'Independent'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={contact.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link href={`/contacts/${contact.id}`} className="p-2 text-slate-400 hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined text-lg">edit</span>
+                      </Link>
+                      <button className="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+                        <span className="material-symbols-outlined text-lg">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {filteredContacts.length === 0 && (
-          <p className="table-empty muted">No contacts found</p>
-        )}
+
+        {/* Pagination placeholder as per design */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <p className="text-sm text-slate-500 font-medium">
+            Showing <span className="text-slate-900">1</span> to <span className="text-slate-900">{filteredContacts.length}</span> of <span className="text-slate-900">{filteredContacts.length}</span> contacts
+          </p>
+          <div className="flex items-center gap-2">
+            <button className="p-2 border border-slate-200 rounded-lg text-slate-400 opacity-50 cursor-not-allowed">
+              <span className="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+            <button className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-bold shadow-md shadow-primary/20">1</button>
+            <button className="p-2 border border-slate-200 rounded-lg text-slate-400 opacity-50 cursor-not-allowed">
+              <span className="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+          </div>
+        </div>
       </div>
     </AppShell>
   )
