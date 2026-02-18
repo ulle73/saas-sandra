@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
-import AppShell from '../../components/AppShell'
 import StatusBadge from '../../components/StatusBadge'
 import { computeContactStatus } from '../../lib/contactStatus'
 
@@ -63,12 +62,6 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
   const initials = contact.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
 
   return (
-    <AppShell
-      title={contact.name}
-      session={session}
-      theme={theme}
-      toggleTheme={toggleTheme}
-    >
       <main className="max-w-[1440px] mx-auto w-full flex flex-col md:flex-row gap-8">
         {/* Left Sidebar: Profile Info */}
         <aside className="w-full md:w-80 flex flex-col gap-6">
@@ -288,6 +281,5 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
           </div>
         </aside>
       </main>
-    </AppShell>
   )
 }

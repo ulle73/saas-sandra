@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import AppShell from '../../components/AppShell'
 import { BentoGrid, BentoItem } from '../../components/BentoGrid'
 import KPICard from '../../components/KPICard'
 import WeekBookingBoard from '../../components/WeekBookingBoard'
@@ -140,8 +139,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
   if (loading) return null // Keep first paint clean until dashboard data is ready
 
   return (
-    <AppShell title="Overview" session={session} theme={theme} onToggleTheme={toggleTheme}>
-      <div className="dashboard-stack">
+    <div className="dashboard-stack">
         
         {/* Welcome Section */}
         <section className="dashboard-welcome">
@@ -284,7 +282,6 @@ export default function Dashboard({ session, theme, toggleTheme }) {
           )}
 
         </BentoGrid>
-      </div>
-    </AppShell>
+    </div>
   )
 }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import AppShell from '../../components/AppShell'
 
 export default function NewContact({ session, theme, toggleTheme }) {
   const router = useRouter()
@@ -67,13 +66,6 @@ export default function NewContact({ session, theme, toggleTheme }) {
   }
 
   return (
-    <AppShell
-      title="New Contact"
-      session={session}
-      theme={theme}
-      onToggleTheme={toggleTheme}
-      actions={<button type="button" onClick={() => router.push('/contacts')} className="btn-secondary">Back</button>}
-    >
       <div className="page-medium">
         <form onSubmit={handleSubmit} className="card page-form stack-lg">
           {error && <p className="form-error">{error}</p>}
@@ -133,6 +125,5 @@ export default function NewContact({ session, theme, toggleTheme }) {
           {loadingCompanies && <p className="small-copy muted">Loading companies...</p>}
         </form>
       </div>
-    </AppShell>
   )
 }

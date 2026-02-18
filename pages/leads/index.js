@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import AppShell from '../../components/AppShell'
 
 export default function AILeads({ session, theme, toggleTheme }) {
   const router = useRouter()
@@ -58,12 +57,6 @@ export default function AILeads({ session, theme, toggleTheme }) {
   }
 
   return (
-    <AppShell
-      title="AI Leads"
-      session={session}
-      theme={theme}
-      toggleTheme={toggleTheme}
-    >
       <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-160px)]">
         {/* Main List Column */}
         <div className="flex-1 flex flex-col gap-6 min-w-0">
@@ -230,6 +223,5 @@ export default function AILeads({ session, theme, toggleTheme }) {
           </aside>
         )}
       </div>
-    </AppShell>
   )
 }

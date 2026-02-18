@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
-import AppShell from '../../components/AppShell'
 import { buildKeywordsFromPresets, buildGoogleAlertsQuery, buildGoogleNewsTestUrl } from '../../lib/newsKeywords'
 
 export default function Companies({ session, theme, toggleTheme }) {
@@ -63,12 +62,6 @@ export default function Companies({ session, theme, toggleTheme }) {
   const getInitials = (name) => name.substring(0, 2).toUpperCase()
 
   return (
-    <AppShell
-      title="Companies"
-      session={session}
-      theme={theme}
-      toggleTheme={toggleTheme}
-    >
       <div className="flex flex-col lg:flex-row gap-8 h-full">
         <div className="flex-1 flex flex-col gap-6">
           {/* Header & Main Actions */}
@@ -223,6 +216,5 @@ export default function Companies({ session, theme, toggleTheme }) {
           </aside>
         )}
       </div>
-    </AppShell>
   )
 }

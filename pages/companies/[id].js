@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import AppShell from '../../components/AppShell'
 import {
   KEYWORD_PRESETS,
   parseCustomKeywords,
@@ -156,13 +155,6 @@ export default function EditCompany({ session, theme, toggleTheme }) {
   const visibleArticles = showAllArticles ? fetchedArticles : fetchedArticles.slice(0, 2)
 
   return (
-    <AppShell
-      title={`Company: ${name || 'Edit'}`}
-      session={session}
-      theme={theme}
-      onToggleTheme={toggleTheme}
-      actions={<button type="button" onClick={() => router.push('/companies')} className="btn-secondary">Back</button>}
-    >
       <div className="page-wide page-stack">
         <section className="card page-form page-stack">
           {error && <p className="form-error">{error}</p>}
@@ -287,6 +279,5 @@ export default function EditCompany({ session, theme, toggleTheme }) {
           )}
         </section>
       </div>
-    </AppShell>
   )
 }

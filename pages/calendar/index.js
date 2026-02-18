@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import AppShell from '../../components/AppShell'
 
 export default function CalendarPage({ session, theme, toggleTheme }) {
   const router = useRouter()
@@ -122,12 +121,6 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
   if (loading) return null
 
   return (
-    <AppShell
-      title="Calendar"
-      session={session}
-      theme={theme}
-      toggleTheme={toggleTheme}
-    >
       <div className="flex flex-col lg:flex-row gap-8 h-full">
         {/* Left Sidebar Info */}
         <aside className="w-full lg:w-72 flex flex-col gap-8">
@@ -237,6 +230,5 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
            </div>
         </div>
       </div>
-    </AppShell>
   )
 }

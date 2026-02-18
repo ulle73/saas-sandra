@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import AppShell from '../../components/AppShell'
 import {
   KEYWORD_PRESETS,
   parseCustomKeywords,
@@ -69,13 +68,6 @@ export default function NewCompany({ session, theme, toggleTheme }) {
   if (!session) return null
 
   return (
-    <AppShell
-      title="New Company"
-      session={session}
-      theme={theme}
-      onToggleTheme={toggleTheme}
-      actions={<button type="button" onClick={() => router.push('/companies')} className="btn-secondary">Back</button>}
-    >
       <div className="page-narrow">
         <form onSubmit={handleSubmit} className="card page-form page-stack">
           {error && <p className="form-error">{error}</p>}
@@ -158,6 +150,5 @@ export default function NewCompany({ session, theme, toggleTheme }) {
           </button>
         </form>
       </div>
-    </AppShell>
   )
 }

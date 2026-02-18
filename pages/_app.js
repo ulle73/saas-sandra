@@ -1,8 +1,23 @@
 import '../styles/globals.css'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useRouter } from 'next/router'
+import AppShell from '../components/AppShell'
+
+const SHELL_TITLES = {
+  '/dashboard': 'Overview',
+  '/contacts': 'Contacts',
+  '/contacts/new': 'New Contact',
+  '/contacts/[id]': 'Contact',
+  '/companies': 'Companies',
+  '/companies/new': 'New Company',
+  '/companies/[id]': 'Edit Company',
+  '/leads': 'AI Leads',
+  '/calendar': 'Calendar',
+}
 
 function MyApp({ Component, pageProps }) {
+  const router = useRouter()
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [theme, setTheme] = useState('dark')
@@ -55,7 +70,21 @@ function MyApp({ Component, pageProps }) {
     </div>
   }
 
-  return <Component {...pageProps} session={session} theme={theme} toggleTheme={toggleTheme} />
+  const page = <Component {...pageProps} session={session} theme={theme} toggleTheme={toggleTheme} />
+  const usesShell = router.pathname !== '/' && Boolean(session)
+
+  if (!usesShell) return page
+
+  return (
+    <AppShell
+      session={session}
+      theme={theme}
+      toggleTheme={toggleTheme}
+      title={SHELL_TITLES[router.pathname]}
+    >
+      {page}
+    </AppShell>
+  )
 }
 
 export default MyApp

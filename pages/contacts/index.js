@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
-import AppShell from '../../components/AppShell'
 import StatusBadge from '../../components/StatusBadge'
 import { computeContactStatus } from '../../lib/contactStatus'
 
@@ -58,12 +57,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
   if (loading) return null
 
   return (
-    <AppShell
-      title="Contacts"
-      session={session}
-      theme={theme}
-      toggleTheme={toggleTheme}
-    >
+    <>
       {/* Table Header Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
@@ -182,6 +176,6 @@ export default function Contacts({ session, theme, toggleTheme }) {
           </div>
         </div>
       </div>
-    </AppShell>
+    </>
   )
 }
