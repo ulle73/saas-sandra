@@ -9,6 +9,7 @@ const SHELL_TITLES = {
   '/contacts': 'Contacts',
   '/contacts/new': 'New Contact',
   '/contacts/[id]': 'Contact',
+  '/contacts/edit/[id]': 'Edit Contact',
   '/companies': 'Companies',
   '/companies/new': 'New Company',
   '/companies/[id]': 'Edit Company',

@@ -5,6 +5,13 @@ import Link from 'next/link'
 import StatusBadge from '../../components/StatusBadge'
 import { computeContactStatus } from '../../lib/contactStatus'
 
+function normalizeWebUrl(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+  if (/^https?:\/\//i.test(raw)) return raw
+  return `https://${raw}`
+}
+
 export default function ContactDetail({ session, theme, toggleTheme }) {
   const router = useRouter()
   const { id } = router.query
@@ -14,6 +21,10 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
   const [company, setCompany] = useState(null)
   const [activities, setActivities] = useState([])
   const [deals, setDeals] = useState([])
+  const [showActivityForm, setShowActivityForm] = useState(false)
+  const [activityType, setActivityType] = useState('call')
+  const [activityNotes, setActivityNotes] = useState('')
+  const [activitySaving, setActivitySaving] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -60,6 +71,49 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
 
   const status = computeContactStatus(contact)
   const initials = contact.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+  const companyWebsite = normalizeWebUrl(company?.website)
+
+  const handleCreateActivity = async (event) => {
+    event.preventDefault()
+    if (!activityNotes.trim()) return
+
+    setActivitySaving(true)
+    setError('')
+
+    try {
+      const now = new Date().toISOString()
+      const { data: createdActivity, error: createActivityError } = await supabase
+        .from('activities')
+        .insert({
+          user_id: session.user.id,
+          contact_id: contact.id,
+          type: activityType,
+          notes: activityNotes.trim(),
+          timestamp: now,
+        })
+        .select('*')
+        .single()
+
+      if (createActivityError) throw createActivityError
+
+      const { error: updateContactError } = await supabase
+        .from('contacts')
+        .update({ last_touchpoint: now })
+        .eq('id', contact.id)
+        .eq('user_id', session.user.id)
+
+      if (updateContactError) throw updateContactError
+
+      setActivities((current) => [createdActivity, ...current])
+      setContact((current) => ({ ...current, last_touchpoint: now }))
+      setActivityNotes('')
+      setShowActivityForm(false)
+    } catch (createErr) {
+      setError(createErr.message || 'Failed to create activity')
+    } finally {
+      setActivitySaving(false)
+    }
+  }
 
   return (
       <main className="max-w-[1440px] mx-auto w-full flex flex-col md:flex-row gap-8">
@@ -78,7 +132,7 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
                 <span className="material-symbols-outlined text-lg">edit</span>
                 Edit Profile
               </Link>
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-100 transition-all border border-slate-200 dark:border-slate-700">
+              <button onClick={() => document.getElementById('activity-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-100 transition-all border border-slate-200 dark:border-slate-700">
                 <span className="material-symbols-outlined text-lg">history</span>
                 Timeline
               </button>
@@ -141,7 +195,11 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="font-bold text-slate-400">Website</span>
-                  <a href={company.website} className="font-black text-primary hover:underline truncate max-w-[120px]">{company.website?.replace('https://', '')}</a>
+                  {companyWebsite ? (
+                    <a href={companyWebsite} target="_blank" rel="noopener noreferrer" className="font-black text-primary hover:underline truncate max-w-[120px]">{company.website?.replace(/^https?:\/\//i, '')}</a>
+                  ) : (
+                    <span className="font-black text-slate-400">N/A</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -186,14 +244,42 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
           </div>
 
           {/* Activity Section */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-            <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div id="activity-log" className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+            <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
               <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Activity Log</h2>
-              <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-black shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+              <button onClick={() => setShowActivityForm((current) => !current)} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-black shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
                 <span className="material-symbols-outlined text-lg font-black">add</span>
-                Log New Interaction
+                {showActivityForm ? 'Close Form' : 'Log New Interaction'}
               </button>
             </div>
+
+            {showActivityForm ? (
+              <form className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 stack-sm" onSubmit={handleCreateActivity}>
+                <div className="split-2">
+                  <div>
+                    <label className="form-label">Type</label>
+                    <select value={activityType} onChange={(event) => setActivityType(event.target.value)} className="input-field">
+                      <option value="call">Call</option>
+                      <option value="email">Email</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="note">Note</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Note</label>
+                    <input value={activityNotes} onChange={(event) => setActivityNotes(event.target.value)} className="input-field" placeholder="What happened?" required />
+                  </div>
+                </div>
+                <div className="action-row">
+                  <button type="submit" className="btn-primary" disabled={activitySaving}>
+                    {activitySaving ? 'Saving...' : 'Save Interaction'}
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => setShowActivityForm(false)} disabled={activitySaving}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : null}
             
             <div className="p-8 grow relative">
               {activities.length === 0 ? (
@@ -264,11 +350,6 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
                 ))}
               </div>
             )}
-            
-            <button className="w-full mt-6 py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-xs font-black text-slate-400 hover:text-primary hover:border-primary/30 transition-all flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-lg">add</span>
-              Create New Deal
-            </button>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -276,7 +357,6 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
             <div className="flex flex-wrap gap-2">
               <span className="px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-500 font-black text-[9px] uppercase tracking-widest border border-slate-100 dark:border-slate-700">Enterprise</span>
               <span className="px-2 py-1 rounded bg-primary/5 text-primary font-black text-[9px] uppercase tracking-widest border border-primary/10">VIP Client</span>
-              <button className="h-6 w-6 rounded border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 text-xs font-black hover:bg-slate-50 transition-colors">+</button>
             </div>
           </div>
         </aside>
