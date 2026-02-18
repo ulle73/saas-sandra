@@ -6,6 +6,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
+  const searchTerm = typeof router.query.q === 'string' ? router.query.q.trim().toLowerCase() : ''
   
   // Outlook Sync State
   const [outlookEvents, setOutlookEvents] = useState([])
@@ -57,21 +58,40 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1))
   }
 
+  const filteredEvents = useMemo(() => {
+    if (!searchTerm) return outlookEvents
+
+    return outlookEvents.filter((event) => {
+      const haystack = [
+        event.title,
+        event.location,
+        event.organizer,
+        event.organizerEmail,
+        ...(event.attendeeEmails || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(searchTerm)
+    })
+  }, [outlookEvents, searchTerm])
+
   const currentMonthEvents = useMemo(() => {
-    return outlookEvents.filter(event => {
+    return filteredEvents.filter(event => {
       const start = event.startAt ? new Date(event.startAt) : null
       if (!start) return false
       return start.getMonth() === currentDate.getMonth() && start.getFullYear() === currentDate.getFullYear()
     })
-  }, [outlookEvents, currentDate])
+  }, [filteredEvents, currentDate])
 
   const upcomingAgenda = useMemo(() => {
     const now = new Date()
-    return outlookEvents
+    return filteredEvents
       .filter(e => e.startAt && new Date(e.startAt) >= now)
       .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))
       .slice(0, 5)
-  }, [outlookEvents])
+  }, [filteredEvents])
 
   const renderCalendarDays = () => {
     const month = currentDate.getMonth()
@@ -90,7 +110,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
     for (let d = 1; d <= totalDays; d++) {
       const cellDate = new Date(year, month, d)
       const isToday = isSameDay(cellDate, new Date())
-      const dayEvents = outlookEvents.filter(e => e.startAt && isSameDay(new Date(e.startAt), cellDate))
+      const dayEvents = filteredEvents.filter(e => e.startAt && isSameDay(new Date(e.startAt), cellDate))
 
       cells.push(
         <div key={d} className={`min-h-[120px] border-r border-b border-slate-100 dark:border-slate-800 p-3 group transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${isToday ? 'bg-primary/[0.02] dark:bg-primary/5' : ''}`}>
@@ -131,6 +151,11 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
 
            <div className="space-y-6">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Upcoming Agenda</h3>
+              {searchTerm && (
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Filter: "{searchTerm}" ({currentMonthEvents.length} in month)
+                </p>
+              )}
               <div className="space-y-4">
                  {outlookLoading ? (
                    <p className="text-xs text-slate-400 animate-pulse font-bold">Laddar agenda...</p>
