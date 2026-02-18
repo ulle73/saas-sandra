@@ -19,6 +19,7 @@ model Company {
   name         String
   industry     String?
   website      String?
+  status       String      @default("active")
   newsKeywordIds String[]  @map("news_keyword_ids")
   newsCustomKeywords String[] @map("news_custom_keywords")
   newsKeywords String[]    @map("news_keywords")

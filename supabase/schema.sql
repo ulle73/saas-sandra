@@ -11,6 +11,7 @@ create table if not exists public.companies (
   name text not null,
   industry text,
   website text,
+  status text not null default 'active' check (status in ('active', 'inactive')),
   news_keyword_ids text[] not null default '{}',
   news_custom_keywords text[] not null default '{}',
   news_keywords text[] not null default '{}',
@@ -23,6 +24,13 @@ alter table public.companies
 
 alter table public.companies
   add column if not exists news_custom_keywords text[] not null default '{}';
+
+alter table public.companies
+  add column if not exists status text not null default 'active';
+
+update public.companies
+set status = 'active'
+where status is null;
 
 create table if not exists public.contacts (
   id uuid primary key default gen_random_uuid(),
@@ -176,6 +184,7 @@ alter table public.weekly_leads
   add column if not exists is_new_prospect boolean not null default false;
 
 create index if not exists idx_companies_user_id on public.companies (user_id);
+create index if not exists idx_companies_status on public.companies (status);
 create index if not exists idx_contacts_user_id on public.contacts (user_id);
 create index if not exists idx_contacts_company_id on public.contacts (company_id);
 create index if not exists idx_contacts_status on public.contacts (status);

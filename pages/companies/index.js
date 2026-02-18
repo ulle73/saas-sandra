@@ -3,11 +3,25 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
+const COMPANY_STATUSES = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
 function normalizeWebUrl(value) {
   const raw = String(value || '').trim()
   if (!raw) return null
   if (/^https?:\/\//i.test(raw)) return raw
   return `https://${raw}`
+}
+
+function normalizeCompanyStatus(value) {
+  return value === 'inactive' ? 'inactive' : 'active'
+}
+
+function getStatusBadgeClass(status) {
+  if (status === 'inactive') return 'text-slate-500'
+  return 'text-emerald-600'
 }
 
 export default function Companies({ session }) {
@@ -21,6 +35,7 @@ export default function Companies({ session }) {
   const [companyNews, setCompanyNews] = useState([])
   const [newsLoading, setNewsLoading] = useState(false)
   const [newsError, setNewsError] = useState('')
+  const [statusSavingId, setStatusSavingId] = useState('')
 
   useEffect(() => {
     if (!session) {
@@ -112,6 +127,39 @@ export default function Companies({ session }) {
 
   const getInitials = (name) => name.substring(0, 2).toUpperCase()
   const selectedCompanyWebsite = normalizeWebUrl(selectedCompany?.website)
+  const selectedCompanyStatus = normalizeCompanyStatus(selectedCompany?.status)
+
+  const handleStatusChange = async (companyId, nextStatus) => {
+    const normalizedStatus = normalizeCompanyStatus(nextStatus)
+    setStatusSavingId(companyId)
+    setError('')
+
+    try {
+      const { error: updateError } = await supabase
+        .from('companies')
+        .update({ status: normalizedStatus })
+        .eq('id', companyId)
+        .eq('user_id', session.user.id)
+
+      if (updateError) throw updateError
+
+      setCompanies((current) => current.map((company) => (
+        company.id === companyId ? { ...company, status: normalizedStatus } : company
+      )))
+      setSelectedCompany((current) => {
+        if (!current || current.id !== companyId) return current
+        return { ...current, status: normalizedStatus }
+      })
+    } catch (updateErr) {
+      if (/column .*status/i.test(String(updateErr.message || ''))) {
+        setError('Company status saknas i databasen. Kör `npm run db:init` för att uppdatera schema.')
+      } else {
+        setError(updateErr.message || 'Failed to update company status')
+      }
+    } finally {
+      setStatusSavingId('')
+    }
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-full min-h-0">
@@ -198,10 +246,22 @@ export default function Companies({ session }) {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></span>
-                        Active
-                      </span>
+                      <div className="flex items-center gap-3" onClick={(event) => event.stopPropagation()}>
+                        <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${getStatusBadgeClass(normalizeCompanyStatus(company.status))}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${normalizeCompanyStatus(company.status) === 'inactive' ? 'bg-slate-400' : 'bg-emerald-500 shadow-sm shadow-emerald-200'}`}></span>
+                          {normalizeCompanyStatus(company.status)}
+                        </span>
+                        <select
+                          value={normalizeCompanyStatus(company.status)}
+                          onChange={(event) => handleStatusChange(company.id, event.target.value)}
+                          disabled={statusSavingId === company.id}
+                          className="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-200"
+                        >
+                          {COMPANY_STATUSES.map((statusOption) => (
+                            <option key={statusOption.value} value={statusOption.value}>{statusOption.label}</option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -215,7 +275,7 @@ export default function Companies({ session }) {
         <aside className="w-full lg:w-96 flex flex-col gap-6">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden sticky top-8">
             <div className="p-8 border-b border-slate-50 dark:border-slate-800">
-              <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 mb-6">
                 <div className="h-14 w-14 rounded-xl bg-primary flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">
                   {getInitials(selectedCompany.name)}
                 </div>
@@ -223,8 +283,13 @@ export default function Companies({ session }) {
                   <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{selectedCompany.name}</h2>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">{selectedCompany.industry || 'General'}</p>
                 </div>
-              </div>
-              <div className="flex gap-3">
+                </div>
+                <div className="top-gap-sm">
+                  <span className={`badge ${selectedCompanyStatus === 'inactive' ? 'badge-status-rejected' : 'badge-status-accepted'}`}>
+                    {selectedCompanyStatus === 'inactive' ? 'Inactive' : 'Active'}
+                  </span>
+                </div>
+                <div className="flex gap-3">
                 <Link href={`/companies/${selectedCompany.id}`} className="flex-1 flex items-center justify-center py-2.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all shadow-md shadow-primary/10">
                   Edit Company
                 </Link>
