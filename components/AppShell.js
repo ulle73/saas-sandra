@@ -26,7 +26,8 @@ export default function AppShell({ children, session, theme, toggleTheme, title 
           <Header 
             user={session?.user} 
             theme={theme} 
-            onToggleTheme={toggleTheme} 
+            onToggleTheme={toggleTheme}
+            onSignOut={handleSignOut}
           />
           
           <div className="p-8">

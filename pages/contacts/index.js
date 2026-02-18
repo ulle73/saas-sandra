@@ -192,7 +192,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <a className="text-sm text-primary hover:underline font-medium" href={`mailto:${contact.email}`}>
+                    <a className="text-sm text-primary hover:underline font-medium" href={`mailto:${contact.email}`} target="_blank" rel="noopener noreferrer">
                       {contact.email}
                     </a>
                   </td>

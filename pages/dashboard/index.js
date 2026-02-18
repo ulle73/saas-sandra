@@ -305,7 +305,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                         We found <span className="dashboard-highlight">{unmatchedEvents.length}</span> calendar events that can be linked to contacts.
                       </p>
                    </div>
-                   <button className="btn btn-primary">
+                   <button className="btn btn-primary" onClick={() => router.push('/leads')}>
                       Review Suggestions
                    </button>
                 </div>

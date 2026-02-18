@@ -12,7 +12,7 @@ const SEARCH_CONFIG = {
   },
 }
 
-export default function Header({ user, onToggleTheme, theme }) {
+export default function Header({ user, onToggleTheme, theme, onSignOut }) {
   const router = useRouter()
   const searchConfig = SEARCH_CONFIG[router.pathname]
   const queryKey = searchConfig?.queryKey || 'q'
@@ -79,18 +79,11 @@ export default function Header({ user, onToggleTheme, theme }) {
             {theme === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
         </button>
-        
-        <button className="p-2 text-slate-500 hover:bg-slate-50 rounded-lg relative">
-          <span className="material-symbols-outlined">notifications</span>
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+
+        <button onClick={onSignOut} className="p-2 text-slate-500 hover:bg-slate-50 rounded-lg" title="Sign out">
+          <span className="material-symbols-outlined">logout</span>
         </button>
-        
-        <button className="p-2 text-slate-500 hover:bg-slate-50 rounded-lg">
-          <span className="material-symbols-outlined">settings</span>
-        </button>
-        
-        <div className="h-8 w-px bg-slate-200 mx-2"></div>
-        
+
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-semibold text-slate-900 leading-none">

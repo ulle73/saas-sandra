@@ -164,7 +164,7 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">LinkedIn</p>
                   {contact.linkedin_url ? (
-                    <a href={contact.linkedin_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-primary hover:underline">View Profile</a>
+                    <a href={contact.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-primary hover:underline">View Profile</a>
                   ) : (
                     <p className="text-sm font-bold text-slate-400">None</p>
                   )}
