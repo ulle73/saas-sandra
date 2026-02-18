@@ -9,6 +9,7 @@ import { buildOutlookSyncPlan } from '../../lib/outlookSync'
 
 export default function Dashboard({ session, theme, toggleTheme }) {
   const router = useRouter()
+  const searchTerm = typeof router.query.q === 'string' ? router.query.q.trim().toLowerCase() : ''
   // Stats state
   const [stats, setStats] = useState({ green: 0, yellow: 0, red: 0, total: 0 })
   const [recentActivity, setRecentActivity] = useState([])
@@ -101,6 +102,35 @@ export default function Dashboard({ session, theme, toggleTheme }) {
     }
   }
 
+  const filteredOutlookEvents = useMemo(() => {
+    if (!searchTerm) return outlookEvents
+
+    return outlookEvents.filter((event) => {
+      const haystack = [
+        event.title,
+        event.location,
+        event.organizer,
+        event.organizerEmail,
+        ...(event.attendeeEmails || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(searchTerm)
+    })
+  }, [outlookEvents, searchTerm])
+
+  const filteredRecentActivity = useMemo(() => {
+    if (!searchTerm) return recentActivity
+
+    return recentActivity.filter((activity) => {
+      const contactName = activity.contacts?.name || ''
+      const haystack = `${contactName} ${activity.type}`.toLowerCase()
+      return haystack.includes(searchTerm)
+    })
+  }, [recentActivity, searchTerm])
+
   const outlookSummary = useMemo(() => {
     const now = new Date()
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -118,7 +148,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
     let weekCount = 0
     let nextEvent = null
 
-    outlookEvents.forEach((event) => {
+    filteredOutlookEvents.forEach((event) => {
       const start = event?.startAt ? new Date(event.startAt) : null
       if (!start || Number.isNaN(start.getTime())) return
 
@@ -134,7 +164,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
       weekCount,
       nextEvent,
     }
-  }, [outlookEvents])
+  }, [filteredOutlookEvents])
 
   if (loading) return null // Keep first paint clean until dashboard data is ready
 
@@ -209,6 +239,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                    <p className="dashboard-panel-meta">
                      Outlook Sync: {outlookEnabled ? 'Active' : 'Disconnected'} · Idag: {outlookSummary.todayCount} · Veckan: {outlookSummary.weekCount}
                      {outlookSummary.nextEvent?.startAt ? ` · Nästa: ${new Date(outlookSummary.nextEvent.startAt).toLocaleString('sv-SE')}` : ''}
+                     {searchTerm ? ` · Filter: "${searchTerm}"` : ''}
                    </p>
                 </div>
                 <button type="button" className="btn-secondary" onClick={fetchOutlookEvents} disabled={outlookLoading}>
@@ -222,7 +253,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                     <div className="dashboard-spinner"></div>
                   </div>
                 ) : (
-                  <WeekBookingBoard events={outlookEvents} />
+                  <WeekBookingBoard events={filteredOutlookEvents} />
                 )}
              </div>
           </BentoItem>
@@ -237,10 +268,10 @@ export default function Dashboard({ session, theme, toggleTheme }) {
              </div>
 
              <div className="dashboard-activity-list">
-                {recentActivity.length === 0 ? (
+                {filteredRecentActivity.length === 0 ? (
                   <p className="dashboard-empty-note">No recent activity recorded.</p>
                 ) : (
-                  recentActivity.map((activity) => (
+                  filteredRecentActivity.map((activity) => (
                     <div key={activity.id} className="dashboard-activity-item">
                        <div className="dashboard-activity-icon-wrap">
                           <span className="material-symbols-outlined dashboard-activity-icon">

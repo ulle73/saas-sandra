@@ -1,31 +1,44 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 
+const SEARCH_CONFIG = {
+  '/calendar': {
+    queryKey: 'q',
+    placeholder: 'Search meetings in calendar...',
+  },
+  '/dashboard': {
+    queryKey: 'q',
+    placeholder: 'Search meetings, activity, contacts...',
+  },
+}
+
 export default function Header({ user, onToggleTheme, theme }) {
   const router = useRouter()
-  const isCalendarRoute = router.pathname === '/calendar'
-  const queryValue = typeof router.query.q === 'string' ? router.query.q : ''
+  const searchConfig = SEARCH_CONFIG[router.pathname]
+  const queryKey = searchConfig?.queryKey || 'q'
+  const isSearchEnabled = Boolean(searchConfig)
+  const queryValue = typeof router.query[queryKey] === 'string' ? router.query[queryKey] : ''
   const [searchInput, setSearchInput] = useState('')
 
   useEffect(() => {
-    if (isCalendarRoute) {
+    if (isSearchEnabled) {
       setSearchInput(queryValue)
       return
     }
     setSearchInput('')
-  }, [isCalendarRoute, queryValue])
+  }, [isSearchEnabled, queryValue])
 
   useEffect(() => {
-    if (!isCalendarRoute) return
+    if (!isSearchEnabled) return
 
     const timeoutId = setTimeout(() => {
       const nextQuery = { ...router.query }
       const trimmed = searchInput.trim()
 
-      if (trimmed) nextQuery.q = trimmed
-      else delete nextQuery.q
+      if (trimmed) nextQuery[queryKey] = trimmed
+      else delete nextQuery[queryKey]
 
-      const sameQueryValue = (typeof router.query.q === 'string' ? router.query.q : '') === (trimmed || '')
+      const sameQueryValue = (typeof router.query[queryKey] === 'string' ? router.query[queryKey] : '') === (trimmed || '')
       if (sameQueryValue) return
 
       router.replace(
@@ -36,7 +49,7 @@ export default function Header({ user, onToggleTheme, theme }) {
     }, 180)
 
     return () => clearTimeout(timeoutId)
-  }, [isCalendarRoute, router, searchInput])
+  }, [isSearchEnabled, queryKey, router, searchInput])
 
   return (
     <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 sticky top-0 z-10">
@@ -47,10 +60,11 @@ export default function Header({ user, onToggleTheme, theme }) {
           </span>
           <input 
             className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm placeholder:text-slate-500 outline-none" 
-            placeholder={isCalendarRoute ? 'Search meetings in calendar...' : 'Search contacts, companies, or tasks...'} 
+            placeholder={searchConfig?.placeholder || 'Search contacts, companies, or tasks...'} 
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
+            disabled={!isSearchEnabled}
           />
         </div>
       </div>
