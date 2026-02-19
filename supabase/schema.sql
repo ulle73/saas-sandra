@@ -126,6 +126,20 @@ create table if not exists public.lead_discovery_items (
   unique (user_id, company_name, source_url)
 );
 
+create table if not exists public.user_outlook_connections (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  microsoft_user_id text,
+  email text,
+  display_name text,
+  access_token text,
+  refresh_token text,
+  token_type text,
+  scope text,
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.lead_discovery_items
   add column if not exists company_domain text;
 
@@ -155,6 +169,36 @@ alter table public.lead_discovery_items
 
 alter table public.lead_discovery_items
   add column if not exists linkedin_company_url text;
+
+alter table public.user_outlook_connections
+  add column if not exists microsoft_user_id text;
+
+alter table public.user_outlook_connections
+  add column if not exists email text;
+
+alter table public.user_outlook_connections
+  add column if not exists display_name text;
+
+alter table public.user_outlook_connections
+  add column if not exists access_token text;
+
+alter table public.user_outlook_connections
+  add column if not exists refresh_token text;
+
+alter table public.user_outlook_connections
+  add column if not exists token_type text;
+
+alter table public.user_outlook_connections
+  add column if not exists scope text;
+
+alter table public.user_outlook_connections
+  add column if not exists expires_at timestamptz;
+
+alter table public.user_outlook_connections
+  add column if not exists created_at timestamptz not null default now();
+
+alter table public.user_outlook_connections
+  add column if not exists updated_at timestamptz not null default now();
 
 alter table public.weekly_leads
   add column if not exists prospect_company text;
@@ -227,6 +271,12 @@ execute function public.set_updated_at();
 drop trigger if exists trg_lead_discovery_updated_at on public.lead_discovery_items;
 create trigger trg_lead_discovery_updated_at
 before update on public.lead_discovery_items
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists trg_outlook_connections_updated_at on public.user_outlook_connections;
+create trigger trg_outlook_connections_updated_at
+before update on public.user_outlook_connections
 for each row
 execute function public.set_updated_at();
 
@@ -332,6 +382,7 @@ alter table public.activities enable row level security;
 alter table public.news_items enable row level security;
 alter table public.weekly_leads enable row level security;
 alter table public.lead_discovery_items enable row level security;
+alter table public.user_outlook_connections enable row level security;
 
 drop policy if exists companies_select_own on public.companies;
 drop policy if exists companies_insert_own on public.companies;

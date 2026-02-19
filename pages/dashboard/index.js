@@ -20,6 +20,10 @@ export default function Dashboard({ session, theme, toggleTheme }) {
   const [unmatchedEvents, setUnmatchedEvents] = useState([])
   const [outlookLoading, setOutlookLoading] = useState(true)
   const [outlookEnabled, setOutlookEnabled] = useState(false)
+  const [outlookConnectionType, setOutlookConnectionType] = useState('none')
+  const [outlookAccount, setOutlookAccount] = useState(null)
+  const [outlookError, setOutlookError] = useState('')
+  const [outlookActionLoading, setOutlookActionLoading] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -73,10 +77,31 @@ export default function Dashboard({ session, theme, toggleTheme }) {
     return data || []
   }
 
+  const getAccessToken = async () => {
+    if (session?.access_token) return session.access_token
+    const { data } = await supabase.auth.getSession()
+    return data?.session?.access_token || null
+  }
+
   const fetchOutlookEvents = async () => {
     setOutlookLoading(true)
+    setOutlookError('')
     try {
-      const response = await fetch('/api/outlook/events?days=40&limit=100')
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        setOutlookEnabled(false)
+        setOutlookConnectionType('none')
+        setOutlookAccount(null)
+        setOutlookEvents([])
+        setUnmatchedEvents([])
+        return
+      }
+
+      const response = await fetch('/api/outlook/events?days=40&limit=100', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
       const raw = await response.text()
       let payload = {}
       try { payload = JSON.parse(raw) } catch { payload = { error: 'Invalid JSON' } }
@@ -84,6 +109,8 @@ export default function Dashboard({ session, theme, toggleTheme }) {
       if (!response.ok) throw new Error(payload.error || 'Failed to fetch Outlook events')
 
       setOutlookEnabled(Boolean(payload.enabled))
+      setOutlookConnectionType(payload.connectionType || 'none')
+      setOutlookAccount(payload.account || null)
       setOutlookEvents(payload.events || [])
 
       if (payload.enabled) {
@@ -93,12 +120,81 @@ export default function Dashboard({ session, theme, toggleTheme }) {
       } else {
         setUnmatchedEvents([])
       }
+
+      if (payload.needsReconnect) {
+        setOutlookError('Outlook-anslutningen gick ut. Anslut kontot igen.')
+      }
     } catch (err) {
       console.error('Outlook sync error:', err)
       setOutlookEnabled(false)
+      setOutlookConnectionType('none')
+      setOutlookAccount(null)
       setUnmatchedEvents([])
+      setOutlookError(err.message || 'Kunde inte synka Outlook just nu.')
     } finally {
       setOutlookLoading(false)
+    }
+  }
+
+  const connectOutlook = async () => {
+    setOutlookActionLoading(true)
+    setOutlookError('')
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        throw new Error('Du är inte inloggad. Logga in igen och försök på nytt.')
+      }
+
+      const response = await fetch('/api/outlook/connect-url', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ returnTo: '/dashboard' }),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || 'Kunde inte starta Outlook-inloggningen.')
+      }
+
+      window.location.assign(payload.url)
+      return
+    } catch (err) {
+      setOutlookError(err.message || 'Kunde inte ansluta Outlook just nu.')
+      setOutlookActionLoading(false)
+    }
+  }
+
+  const disconnectOutlook = async () => {
+    setOutlookActionLoading(true)
+    setOutlookError('')
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        throw new Error('Du är inte inloggad. Logga in igen och försök på nytt.')
+      }
+
+      const response = await fetch('/api/outlook/connection', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Kunde inte koppla från Outlook.')
+      }
+
+      setOutlookEnabled(false)
+      setOutlookConnectionType('none')
+      setOutlookAccount(null)
+      setOutlookEvents([])
+      setUnmatchedEvents([])
+    } catch (err) {
+      setOutlookError(err.message || 'Kunde inte koppla från Outlook just nu.')
+    } finally {
+      setOutlookActionLoading(false)
     }
   }
 
@@ -241,10 +337,42 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                      {outlookSummary.nextEvent?.startAt ? ` · Nästa: ${new Date(outlookSummary.nextEvent.startAt).toLocaleString('sv-SE')}` : ''}
                      {searchTerm ? ` · Filter: "${searchTerm}"` : ''}
                    </p>
+                   {outlookAccount?.email && (
+                     <p className="dashboard-panel-meta">Konto: {outlookAccount.email}</p>
+                   )}
+                   {outlookError && (
+                     <p className="dashboard-panel-meta text-red-600">{outlookError}</p>
+                   )}
                 </div>
-                <button type="button" className="btn-secondary" onClick={fetchOutlookEvents} disabled={outlookLoading}>
-                   {outlookLoading ? 'Synkar...' : 'Synka om'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {outlookConnectionType === 'user' ? (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={disconnectOutlook}
+                      disabled={outlookActionLoading}
+                    >
+                      {outlookActionLoading ? 'Kopplar från...' : 'Koppla från'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={connectOutlook}
+                      disabled={outlookActionLoading}
+                    >
+                      {outlookActionLoading ? 'Startar...' : 'Anslut Outlook'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={fetchOutlookEvents}
+                    disabled={outlookLoading || outlookActionLoading}
+                  >
+                    {outlookLoading ? 'Synkar...' : 'Synka om'}
+                  </button>
+                </div>
              </div>
              
              <div className="dashboard-planner-wrap">

@@ -12,6 +12,10 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
   const [outlookEvents, setOutlookEvents] = useState([])
   const [outlookLoading, setOutlookLoading] = useState(true)
   const [outlookEnabled, setOutlookEnabled] = useState(false)
+  const [outlookConnectionType, setOutlookConnectionType] = useState('none')
+  const [outlookAccount, setOutlookAccount] = useState(null)
+  const [outlookError, setOutlookError] = useState('')
+  const [outlookActionLoading, setOutlookActionLoading] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -22,22 +26,121 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
     fetchOutlookEvents()
   }, [session, router])
 
+  const getAccessToken = async () => {
+    if (session?.access_token) return session.access_token
+    const { data } = await supabase.auth.getSession()
+    return data?.session?.access_token || null
+  }
+
   const fetchOutlookEvents = async () => {
     setOutlookLoading(true)
+    setOutlookError('')
     try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        setOutlookEnabled(false)
+        setOutlookConnectionType('none')
+        setOutlookAccount(null)
+        setOutlookEvents([])
+        return
+      }
+
       // Fetch data for a wider range to support month views
-      const response = await fetch('/api/outlook/events?days=60&limit=200')
-      const payload = await response.json()
+      const response = await fetch('/api/outlook/events?days=60&limit=200', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      const raw = await response.text()
+      let payload = {}
+      try {
+        payload = JSON.parse(raw)
+      } catch {
+        payload = { error: 'Invalid JSON response from Outlook API' }
+      }
 
       if (!response.ok) throw new Error(payload.error || 'Failed to fetch Outlook events')
 
       setOutlookEnabled(Boolean(payload.enabled))
+      setOutlookConnectionType(payload.connectionType || 'none')
+      setOutlookAccount(payload.account || null)
       setOutlookEvents(payload.events || [])
+
+      if (payload.needsReconnect) {
+        setOutlookError('Outlook-anslutningen gick ut. Anslut kontot igen.')
+      }
     } catch (err) {
       console.error('Outlook sync error:', err)
       setOutlookEnabled(false)
+      setOutlookConnectionType('none')
+      setOutlookAccount(null)
+      setOutlookError(err.message || 'Kunde inte synka Outlook just nu.')
     } finally {
       setOutlookLoading(false)
+    }
+  }
+
+  const connectOutlook = async () => {
+    setOutlookActionLoading(true)
+    setOutlookError('')
+
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        throw new Error('Du är inte inloggad. Logga in igen och försök på nytt.')
+      }
+
+      const response = await fetch('/api/outlook/connect-url', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ returnTo: '/calendar' }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || 'Kunde inte starta Outlook-inloggningen.')
+      }
+
+      window.location.assign(payload.url)
+      return
+    } catch (err) {
+      setOutlookError(err.message || 'Kunde inte ansluta Outlook just nu.')
+      setOutlookActionLoading(false)
+    }
+  }
+
+  const disconnectOutlook = async () => {
+    setOutlookActionLoading(true)
+    setOutlookError('')
+
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        throw new Error('Du är inte inloggad. Logga in igen och försök på nytt.')
+      }
+
+      const response = await fetch('/api/outlook/connection', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Kunde inte koppla från Outlook.')
+      }
+
+      setOutlookEnabled(false)
+      setOutlookConnectionType('none')
+      setOutlookAccount(null)
+      setOutlookEvents([])
+    } catch (err) {
+      setOutlookError(err.message || 'Kunde inte koppla från Outlook just nu.')
+    } finally {
+      setOutlookActionLoading(false)
     }
   }
 
@@ -191,10 +294,61 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">{outlookEnabled ? 'Outlook Synced' : 'Sync Status'}</span>
               </div>
               <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                 {outlookEnabled 
-                   ? 'Dina möten från Outlook synkas automatiskt och visas i kalendern.'
-                   : 'Anslut ditt Outlook-konto för att se dina bokningar direkt i vyn.'}
+                 {outlookConnectionType === 'user'
+                   ? 'Ditt Outlook-konto är anslutet. Möten synkas automatiskt i kalendern.'
+                   : outlookConnectionType === 'legacy'
+                     ? 'Kalendern synkas via ett serverkonto. Anslut eget konto för personlig sync.'
+                     : 'Anslut ditt Outlook-konto för att se dina bokningar direkt i vyn.'}
               </p>
+              {outlookAccount?.email && (
+                <p className="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Connected as: {outlookAccount.email}
+                </p>
+              )}
+              {router.query?.outlook === 'connected' && (
+                <p className="mt-2 text-[10px] font-bold text-green-600 uppercase tracking-widest">
+                  Outlook connected successfully
+                </p>
+              )}
+              {router.query?.outlook === 'error' && (
+                <p className="mt-2 text-[10px] font-bold text-red-600 uppercase tracking-widest">
+                  Outlook connection failed. Try again.
+                </p>
+              )}
+              {outlookError && (
+                <p className="mt-2 text-[10px] font-bold text-red-600 uppercase tracking-widest">
+                  {outlookError}
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {outlookConnectionType === 'user' ? (
+                  <button
+                    type="button"
+                    onClick={disconnectOutlook}
+                    disabled={outlookActionLoading}
+                    className="btn btn-secondary text-xs"
+                  >
+                    {outlookActionLoading ? 'Kopplar från...' : 'Koppla från Outlook'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={connectOutlook}
+                    disabled={outlookActionLoading}
+                    className="btn btn-primary text-xs"
+                  >
+                    {outlookActionLoading ? 'Startar...' : 'Anslut Outlook'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={fetchOutlookEvents}
+                  disabled={outlookLoading || outlookActionLoading}
+                  className="btn btn-secondary text-xs"
+                >
+                  {outlookLoading ? 'Synkar...' : 'Synka om'}
+                </button>
+              </div>
            </div>
         </aside>
 
