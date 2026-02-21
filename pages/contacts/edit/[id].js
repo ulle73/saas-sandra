@@ -95,10 +95,16 @@ export default function EditContact({ session }) {
   if (loading) return null
 
   return (
-    <div className="page-medium ux-fade-in">
+    <div className="page-medium ux-page-stack ux-fade-in">
+      <section className="card page-form form-hero">
+        <p className="form-hero-kicker">Contacts</p>
+        <h1 className="form-hero-title">Edit Contact</h1>
+        <p className="form-hero-copy">Keep contact details reliable so status scoring and follow-up planning stay accurate.</p>
+      </section>
+
       <form onSubmit={handleSubmit} className="card page-form stack-lg">
         <div className="between-row">
-          <h1 className="section-title">Edit Contact</h1>
+          <h2 className="section-title">Contact Details</h2>
           <button type="button" className="btn-secondary" onClick={() => router.push(`/contacts/${id}`)}>
             Back
           </button>

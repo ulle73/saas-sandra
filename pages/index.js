@@ -9,6 +9,11 @@ export default function Home({ session, theme, toggleTheme }) {
   const [isLogin, setIsLogin] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const featurePills = [
+    'Pipeline health overview',
+    'AI lead prioritization',
+    'Outlook calendar sync',
+  ]
 
   useEffect(() => {
     if (session) {
@@ -68,6 +73,11 @@ export default function Home({ session, theme, toggleTheme }) {
                     </div>
                     <h1 className="auth-title">Losen</h1>
                     <p className="auth-subtitle">Sales Intelligence Platform</p>
+                    <div className="auth-feature-row">
+                      {featurePills.map((item) => (
+                        <span key={item} className="auth-feature-pill">{item}</span>
+                      ))}
+                    </div>
                 </div>
 
                 <form onSubmit={handleAuth} className="auth-form">

@@ -181,9 +181,15 @@ export default function EditCompany({ session }) {
 
   return (
     <div className="page-wide page-stack ux-section-stagger">
+      <section className="card page-form form-hero">
+        <p className="form-hero-kicker">Companies</p>
+        <h1 className="form-hero-title">Edit Company</h1>
+        <p className="form-hero-copy">Refine account profile, status and keyword targeting to improve monitoring quality.</p>
+      </section>
+
       <form onSubmit={handleSave} className="card page-form stack-lg">
         <div className="between-row">
-          <h1 className="section-title">Edit Company</h1>
+          <h2 className="section-title">Company Details</h2>
           <button type="button" className="btn-secondary" onClick={() => router.push('/companies')}>
             Back
           </button>

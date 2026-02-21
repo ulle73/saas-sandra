@@ -21,7 +21,7 @@ function normalizeCompanyStatus(value) {
 
 function getStatusBadgeClass(status) {
   if (status === 'inactive') return 'text-slate-500 dark:text-slate-300'
-  return 'text-emerald-600'
+  return 'text-emerald-600 dark:text-emerald-300'
 }
 
 export default function Companies({ session }) {
@@ -123,8 +123,6 @@ export default function Companies({ session }) {
     fetchCompanyNews()
   }, [selectedCompany, session])
 
-  if (loading) return null
-
   const getInitials = (name) => name.substring(0, 2).toUpperCase()
   const selectedCompanyWebsite = normalizeWebUrl(selectedCompany?.website)
   const selectedCompanyStatus = normalizeCompanyStatus(selectedCompany?.status)
@@ -161,6 +159,41 @@ export default function Companies({ session }) {
     }
   }
 
+  const summaryCards = useMemo(() => {
+    const activeCount = companies.filter((company) => normalizeCompanyStatus(company.status) === 'active').length
+    const inactiveCount = companies.length - activeCount
+    const monitoredCount = companies.filter((company) => (company.news_keywords || []).length > 0).length
+
+    return [
+      {
+        key: 'active',
+        label: 'Active Accounts',
+        value: activeCount,
+        meta: 'Companies currently in motion',
+      },
+      {
+        key: 'inactive',
+        label: 'Inactive Accounts',
+        value: inactiveCount,
+        meta: 'Paused or deprioritized accounts',
+      },
+      {
+        key: 'monitoring',
+        label: 'Keyword Monitoring',
+        value: monitoredCount,
+        meta: 'Companies with configured news signals',
+      },
+      {
+        key: 'visible',
+        label: 'Visible in Table',
+        value: filteredCompanies.length,
+        meta: 'Current filtered result set',
+      },
+    ]
+  }, [companies, filteredCompanies.length])
+
+  if (loading) return null
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-full min-h-0 ux-section-stagger">
       <div className="flex-1 flex flex-col gap-6 min-w-0">
@@ -174,6 +207,16 @@ export default function Companies({ session }) {
             Add Company
           </Link>
         </div>
+
+        <section className="dashboard-metric-strip">
+          {summaryCards.map((card) => (
+            <article key={card.key} className="glass-panel dashboard-metric-card">
+              <p className="dashboard-metric-label">{card.label}</p>
+              <p className="dashboard-metric-value">{card.value}</p>
+              <p className="dashboard-metric-meta">{card.meta}</p>
+            </article>
+          ))}
+        </section>
 
         <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap gap-4 items-center">
           <div className="flex-1 min-w-[280px] relative">

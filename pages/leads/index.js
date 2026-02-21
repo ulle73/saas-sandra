@@ -120,6 +120,39 @@ export default function AILeads({ session }) {
     return base
   }, [items])
 
+  const leadSummaryCards = useMemo(() => {
+    const avgScore = items.length > 0
+      ? Math.round(items.reduce((sum, item) => sum + (item.score || 0), 0) / items.length)
+      : 0
+
+    return [
+      {
+        key: 'new',
+        label: 'New Leads',
+        value: statusCounts.new,
+        meta: 'Fresh opportunities to evaluate',
+      },
+      {
+        key: 'converted',
+        label: 'Converted',
+        value: statusCounts.converted,
+        meta: 'Leads promoted to company/contact',
+      },
+      {
+        key: 'avg-score',
+        label: 'Average Match Score',
+        value: `${avgScore}%`,
+        meta: 'Across all discovered leads',
+      },
+      {
+        key: 'visible',
+        label: 'Visible in Table',
+        value: filteredItems.length,
+        meta: 'Current filtered result set',
+      },
+    ]
+  }, [filteredItems.length, items, statusCounts.converted, statusCounts.new])
+
   const applyLeadUpdate = (leadId, patch) => {
     setItems((current) => current.map((item) => (
       item.id === leadId ? { ...item, ...patch } : item
@@ -291,6 +324,16 @@ export default function AILeads({ session }) {
             ))}
           </div>
         </div>
+
+        <section className="dashboard-metric-strip">
+          {leadSummaryCards.map((card) => (
+            <article key={card.key} className="glass-panel dashboard-metric-card">
+              <p className="dashboard-metric-label">{card.label}</p>
+              <p className="dashboard-metric-value">{card.value}</p>
+              <p className="dashboard-metric-meta">{card.meta}</p>
+            </article>
+          ))}
+        </section>
 
         <div className="relative">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
@@ -482,7 +525,7 @@ export default function AILeads({ session }) {
                   {actionLoading === 'archive' ? 'Archiving...' : 'Archive'}
                 </button>
                 <button
-                  className="flex-1 py-3 border border-rose-100 text-rose-500 font-bold rounded-xl hover:bg-rose-50 transition-colors disabled:opacity-60"
+                  className="flex-1 py-3 border border-rose-100 dark:border-rose-900/40 text-rose-500 dark:text-rose-300 font-bold rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors disabled:opacity-60"
                   onClick={handleReject}
                   disabled={Boolean(actionLoading)}
                 >

@@ -262,6 +262,23 @@ export default function Dashboard({ session, theme, toggleTheme }) {
     }
   }, [filteredOutlookEvents])
 
+  const dashboardPulse = useMemo(() => {
+    const total = stats.total || 0
+    const healthyShare = total > 0 ? Math.round((stats.green / total) * 100) : 0
+    const atRiskShare = total > 0 ? Math.round(((stats.yellow + stats.red) / total) * 100) : 0
+
+    const nextMeetingDate = outlookSummary.nextEvent?.startAt ? new Date(outlookSummary.nextEvent.startAt) : null
+    const nextMeetingLabel = nextMeetingDate
+      ? nextMeetingDate.toLocaleString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+      : 'No upcoming meeting'
+
+    return {
+      healthyShare,
+      atRiskShare,
+      nextMeetingLabel,
+    }
+  }, [outlookSummary.nextEvent, stats.green, stats.red, stats.total, stats.yellow])
+
   if (loading) return null // Keep first paint clean until dashboard data is ready
 
   return (
@@ -278,7 +295,38 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                 <span className="dashboard-status-dot"></span>
                 <span className="dashboard-status-label">System Operational</span>
              </div>
+             <button type="button" className="btn-secondary dashboard-welcome-link" onClick={() => router.push('/calendar')}>
+               <span className="material-symbols-outlined">calendar_today</span>
+               Open Calendar
+             </button>
+             <button type="button" className="btn-secondary dashboard-welcome-link" onClick={() => router.push('/leads')}>
+               <span className="material-symbols-outlined">auto_awesome</span>
+               Review Leads
+             </button>
           </div>
+        </section>
+
+        <section className="dashboard-metric-strip">
+          <article className="glass-panel dashboard-metric-card">
+            <p className="dashboard-metric-label">Next Meeting</p>
+            <p className="dashboard-metric-value">{dashboardPulse.nextMeetingLabel}</p>
+            <p className="dashboard-metric-meta">{outlookSummary.todayCount} today</p>
+          </article>
+          <article className="glass-panel dashboard-metric-card">
+            <p className="dashboard-metric-label">Engagement Health</p>
+            <p className="dashboard-metric-value">{dashboardPulse.healthyShare}%</p>
+            <p className="dashboard-metric-meta">{stats.green} active of {stats.total} contacts</p>
+          </article>
+          <article className="glass-panel dashboard-metric-card">
+            <p className="dashboard-metric-label">Risk Share</p>
+            <p className="dashboard-metric-value">{dashboardPulse.atRiskShare}%</p>
+            <p className="dashboard-metric-meta">{stats.yellow + stats.red} contacts need attention</p>
+          </article>
+          <article className="glass-panel dashboard-metric-card">
+            <p className="dashboard-metric-label">Unmatched Events</p>
+            <p className="dashboard-metric-value">{unmatchedEvents.length}</p>
+            <p className="dashboard-metric-meta">AI can link these to contacts</p>
+          </article>
         </section>
 
         {/* Primary Bento Grid */}

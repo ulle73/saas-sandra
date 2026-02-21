@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
@@ -54,6 +54,40 @@ export default function Contacts({ session, theme, toggleTheme }) {
     const matchesFilter = filterStatus === 'all' || c.status === filterStatus
     return matchesSearch && matchesFilter
   })
+
+  const summaryCards = useMemo(() => {
+    const totals = { green: 0, yellow: 0, red: 0 }
+    contacts.forEach((contact) => {
+      if (totals[contact.status] !== undefined) totals[contact.status] += 1
+    })
+
+    return [
+      {
+        key: 'active',
+        label: 'Upcoming Activity',
+        value: totals.green,
+        meta: 'Contacts with planned next step',
+      },
+      {
+        key: 'recent',
+        label: 'Recent Contact',
+        value: totals.yellow,
+        meta: 'Touched recently, no new follow-up yet',
+      },
+      {
+        key: 'stale',
+        label: 'Stale >4 Weeks',
+        value: totals.red,
+        meta: 'Needs immediate reactivation',
+      },
+      {
+        key: 'filtered',
+        label: 'Visible in Table',
+        value: filteredContacts.length,
+        meta: 'Current filtered result set',
+      },
+    ]
+  }, [contacts, filteredContacts.length])
 
   if (loading) return null
 
@@ -129,6 +163,16 @@ export default function Contacts({ session, theme, toggleTheme }) {
           </Link>
         </div>
       </div>
+
+      <section className="dashboard-metric-strip">
+        {summaryCards.map((card) => (
+          <article key={card.key} className="glass-panel dashboard-metric-card">
+            <p className="dashboard-metric-label">{card.label}</p>
+            <p className="dashboard-metric-value">{card.value}</p>
+            <p className="dashboard-metric-meta">{card.meta}</p>
+          </article>
+        ))}
+      </section>
 
       {/* Filters Area */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 mb-6 flex flex-wrap gap-4 items-center">

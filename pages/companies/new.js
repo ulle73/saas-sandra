@@ -68,7 +68,13 @@ export default function NewCompany({ session, theme, toggleTheme }) {
   if (!session) return null
 
   return (
-      <div className="page-narrow ux-fade-in">
+      <div className="page-narrow ux-page-stack ux-fade-in">
+        <section className="card page-form form-hero">
+          <p className="form-hero-kicker">Companies</p>
+          <h1 className="form-hero-title">Create Company</h1>
+          <p className="form-hero-copy">Set up company profile and keyword monitoring so relevant news lands in the right account.</p>
+        </section>
+
         <form onSubmit={handleSubmit} className="card page-form page-stack">
           {error && <p className="form-error">{error}</p>}
           <div className="split-2">

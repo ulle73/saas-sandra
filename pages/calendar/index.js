@@ -196,6 +196,56 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
       .slice(0, 5)
   }, [filteredEvents])
 
+  const calendarSummaryCards = useMemo(() => {
+    const today = new Date()
+    const startOfWeek = new Date(today)
+    const day = today.getDay()
+    const mondayOffset = day === 0 ? -6 : 1 - day
+    startOfWeek.setDate(today.getDate() + mondayOffset)
+    startOfWeek.setHours(0, 0, 0, 0)
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(endOfWeek.getDate() + 7)
+
+    const todaysEvents = filteredEvents.filter((event) => {
+      if (!event.startAt) return false
+      const eventDate = new Date(event.startAt)
+      return isSameDay(eventDate, today)
+    }).length
+
+    const weeksEvents = filteredEvents.filter((event) => {
+      if (!event.startAt) return false
+      const eventDate = new Date(event.startAt)
+      return eventDate >= startOfWeek && eventDate < endOfWeek
+    }).length
+
+    return [
+      {
+        key: 'month',
+        label: 'Events This Month',
+        value: currentMonthEvents.length,
+        meta: 'Scheduled inside current month view',
+      },
+      {
+        key: 'today',
+        label: 'Events Today',
+        value: todaysEvents,
+        meta: 'Meetings planned for today',
+      },
+      {
+        key: 'week',
+        label: 'Events This Week',
+        value: weeksEvents,
+        meta: 'Total meetings in current week',
+      },
+      {
+        key: 'upcoming',
+        label: 'Upcoming Agenda',
+        value: upcomingAgenda.length,
+        meta: 'Next 5 future meetings',
+      },
+    ]
+  }, [currentMonthEvents.length, filteredEvents, upcomingAgenda.length])
+
   const renderCalendarDays = () => {
     const month = currentDate.getMonth()
     const year = currentDate.getFullYear()
@@ -222,7 +272,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
            </span>
            <div className="mt-2 flex flex-col gap-1.5">
              {dayEvents.map(e => (
-               <div key={e.id} className="px-2 py-1 border-l-2 border-primary rounded text-[10px] font-black uppercase tracking-tight truncate cursor-pointer transition-transform hover:scale-[1.02] bg-primary/10 text-primary-dark">
+               <div key={e.id} className="px-2 py-1 border-l-2 border-primary rounded text-[10px] font-black uppercase tracking-tight truncate cursor-pointer transition-transform hover:scale-[1.02] bg-primary/10 text-primary">
                  {e.title}
                </div>
              ))}
@@ -375,6 +425,16 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                 </button>
              </div>
            </div>
+
+           <section className="dashboard-metric-strip">
+             {calendarSummaryCards.map((card) => (
+               <article key={card.key} className="glass-panel dashboard-metric-card">
+                 <p className="dashboard-metric-label">{card.label}</p>
+                 <p className="dashboard-metric-value">{card.value}</p>
+                 <p className="dashboard-metric-meta">{card.meta}</p>
+               </article>
+             ))}
+           </section>
 
            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex-1">
               <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">

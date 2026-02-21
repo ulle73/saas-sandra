@@ -66,7 +66,13 @@ export default function NewContact({ session, theme, toggleTheme }) {
   }
 
   return (
-      <div className="page-medium ux-fade-in">
+      <div className="page-medium ux-page-stack ux-fade-in">
+        <section className="card page-form form-hero">
+          <p className="form-hero-kicker">Contacts</p>
+          <h1 className="form-hero-title">Create Contact</h1>
+          <p className="form-hero-copy">Add a clean profile and optionally link it to a company for better follow-up accuracy.</p>
+        </section>
+
         <form onSubmit={handleSubmit} className="card page-form stack-lg">
           {error && <p className="form-error">{error}</p>}
           <div>
@@ -118,6 +124,9 @@ export default function NewContact({ session, theme, toggleTheme }) {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+            {!loadingCompanies && companies.length === 0 && (
+              <p className="tiny-copy muted top-gap-xs">No companies yet. Create one first if you want account-level tracking.</p>
+            )}
           </div>
           <button type="submit" disabled={loading} className="btn-primary btn-full">
             {loading ? 'Saving...' : 'Create Contact'}
