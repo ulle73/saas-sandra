@@ -348,54 +348,56 @@ export default function AILeads({ session }) {
 
         {error && <p className="form-error">{error}</p>}
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex-1 min-h-0 overflow-y-auto overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left border-collapse">
-            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 z-10 border-b border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-950/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <table className="w-full table-fixed text-left border-collapse">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10">
               <tr>
-                <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Company</th>
-                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Match Score</th>
-                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</th>
-                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Growth Signal</th>
+                <th className="w-[40%] py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Company</th>
+                <th className="w-[22%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Match Score</th>
+                <th className="w-[16%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</th>
+                <th className="w-[22%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Growth Signal</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody>
               {filteredItems.map((item) => (
                 <tr
                   key={item.id}
                   onClick={() => setSelectedLead(item)}
                   className={`group cursor-pointer transition-all ${
                     selectedLead?.id === item.id
-                      ? 'bg-primary/[0.04] dark:bg-primary/10 border-l-4 border-primary'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800 border-l-4 border-transparent'
+                      ? 'bg-primary/8 dark:bg-primary/25 shadow-[inset_0_0_0_1px_rgba(94,177,255,0.5)]'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'
                   }`}
                 >
-                  <td className="py-4 px-6">
+                  <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
                       <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs">
                         {item.company_name.substring(0, 2).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-bold text-sm text-slate-900 dark:text-white">{item.company_name}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-slate-900 dark:text-white truncate">{item.company_name}</p>
                         <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">{item.industry || 'Enterprise'}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-4 px-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="w-14 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div className={`${item.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'} h-full`} style={{ width: `${item.score}%` }}></div>
                       </div>
                       <span className={`text-xs font-black ${item.score >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>{item.score}%</span>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-4 px-3">
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                      item.score >= 80 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                      item.score >= 80
+                        ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-800/50'
+                        : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-800/50'
                     }`}>
                       {item.score >= 80 ? 'High' : 'Medium'}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-4 px-3">
                     <p className="text-xs font-medium text-slate-600 dark:text-slate-400 line-clamp-1 italic">
                       "{item.growth_signal || item.reason}"
                     </p>
@@ -409,7 +411,7 @@ export default function AILeads({ session }) {
 
       {selectedLead && (
         <aside className="w-full lg:w-[450px] flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden">
+          <div className="bg-white dark:bg-slate-950/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden">
             <div className="p-8 border-b border-slate-50 dark:border-slate-800">
               <div className="flex items-start gap-4 mb-6">
                 <div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center text-2xl font-black shadow-xl shadow-primary/20">
@@ -445,7 +447,7 @@ export default function AILeads({ session }) {
               </div>
             </div>
 
-            <div className="p-8 grow overflow-y-auto space-y-6 bg-slate-50/50 dark:bg-slate-800/20">
+            <div className="p-8 grow overflow-y-auto space-y-6 dashboard-subsurface">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Target Title</p>
@@ -495,7 +497,7 @@ export default function AILeads({ session }) {
                   <span className="material-symbols-outlined text-base">auto_awesome</span>
                   AI Pitch Vector
                 </h4>
-                <div className="p-5 bg-primary/[0.03] dark:bg-primary/5 rounded-2xl border border-primary/10 relative">
+                <div className="p-5 bg-primary/[0.03] dark:bg-primary/10 rounded-2xl border border-primary/20 relative">
                   <span className="material-symbols-outlined absolute top-2 right-4 opacity-10 text-4xl">format_quote</span>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed italic">
                     {selectedLead.pitch || 'No AI pitch available'}

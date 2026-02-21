@@ -3,7 +3,6 @@ import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import { BentoGrid, BentoItem } from '../../components/BentoGrid'
 import KPICard from '../../components/KPICard'
-import WeekBookingBoard from '../../components/WeekBookingBoard'
 import { computeContactStatus } from '../../lib/contactStatus'
 import { buildOutlookSyncPlan } from '../../lib/outlookSync'
 
@@ -279,6 +278,30 @@ export default function Dashboard({ session, theme, toggleTheme }) {
     }
   }, [outlookSummary.nextEvent, stats.green, stats.red, stats.total, stats.yellow])
 
+  const upcomingEvents = useMemo(() => {
+    const now = new Date()
+    return filteredOutlookEvents
+      .filter((event) => {
+        const start = event?.startAt ? new Date(event.startAt) : null
+        return start && !Number.isNaN(start.getTime()) && start >= now
+      })
+      .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))
+      .slice(0, 5)
+  }, [filteredOutlookEvents])
+
+  const formatEventDateTime = (value) => {
+    if (!value) return 'No time set'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'Invalid date'
+    return date.toLocaleString('sv-SE', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   if (loading) return null // Keep first paint clean until dashboard data is ready
 
   return (
@@ -376,13 +399,12 @@ export default function Dashboard({ session, theme, toggleTheme }) {
              />
           </BentoItem>
 
-          <BentoItem colSpan={4} className="dashboard-planner-panel">
+          <BentoItem colSpan={2} rowSpan={2} className="dashboard-calendar-snapshot">
              <div className="dashboard-panel-header">
                 <div>
-                   <h3 className="dashboard-panel-title">Calendar + Trello Week Board</h3>
+                   <h3 className="dashboard-panel-title">Calendar Snapshot</h3>
                    <p className="dashboard-panel-meta">
-                     Outlook Sync: {outlookEnabled ? 'Active' : 'Disconnected'} · Idag: {outlookSummary.todayCount} · Veckan: {outlookSummary.weekCount}
-                     {outlookSummary.nextEvent?.startAt ? ` · Nästa: ${new Date(outlookSummary.nextEvent.startAt).toLocaleString('sv-SE')}` : ''}
+                     Outlook Sync: {outlookEnabled ? 'Active' : 'Disconnected'} · Idag: {outlookSummary.todayCount} · Veckan: {outlookSummary.weekCount} · Nästa 5 möten
                      {searchTerm ? ` · Filter: "${searchTerm}"` : ''}
                    </p>
                    {outlookAccount?.email && (
@@ -392,7 +414,14 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                      <p className="dashboard-panel-meta text-red-600">{outlookError}</p>
                    )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => router.push('/calendar')}
+                  >
+                    Öppna kalender
+                  </button>
                   {outlookConnectionType === 'user' ? (
                     <button
                       type="button"
@@ -422,16 +451,36 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                   </button>
                 </div>
              </div>
-             
-             <div className="dashboard-planner-wrap">
-                {outlookLoading ? (
-                  <div className="dashboard-spinner-wrap">
-                    <div className="dashboard-spinner"></div>
-                  </div>
-                ) : (
-                  <WeekBookingBoard events={filteredOutlookEvents} />
-                )}
-             </div>
+
+             {outlookLoading ? (
+               <div className="dashboard-spinner-wrap">
+                 <div className="dashboard-spinner"></div>
+               </div>
+             ) : upcomingEvents.length === 0 ? (
+               <p className="dashboard-empty-note">No upcoming meetings in the current feed.</p>
+             ) : (
+               <div className="dashboard-calendar-events custom-scrollbar">
+                 {upcomingEvents.map((event) => (
+                   <article key={event.id} className="dashboard-calendar-event">
+                     <div className="dashboard-calendar-event-copy">
+                       <p className="dashboard-calendar-event-title">{event.title || 'Untitled meeting'}</p>
+                       <p className="dashboard-calendar-event-meta">{formatEventDateTime(event.startAt)}</p>
+                       <p className="dashboard-calendar-event-meta">{event.organizer || event.location || 'No organizer/location'}</p>
+                     </div>
+                     {event.webLink ? (
+                       <a
+                         href={event.webLink}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="inline-link small-copy"
+                       >
+                         Open
+                       </a>
+                     ) : null}
+                   </article>
+                 ))}
+               </div>
+             )}
           </BentoItem>
 
           {/* Recent Activity Feed */}

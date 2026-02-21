@@ -240,39 +240,39 @@ export default function Companies({ session }) {
 
         {error && <p className="form-error">{error}</p>}
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left border-collapse">
+        <div className="bg-white dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-hidden custom-scrollbar">
+          <table className="w-full table-fixed text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Name</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Industry</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Website</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="w-[34%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Name</th>
+                <th className="w-[23%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Industry</th>
+                <th className="w-[23%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Website</th>
+                <th className="w-[20%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody>
               {filteredCompanies.map((company) => {
                 const companyUrl = normalizeWebUrl(company.website)
                 return (
                   <tr
                     key={company.id}
                     onClick={() => setSelectedCompany(company)}
-                    className={`group cursor-pointer transition-colors ${selectedCompany?.id === company.id ? 'bg-primary/[0.03] dark:bg-primary/5' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                    className={`group cursor-pointer transition-colors ${selectedCompany?.id === company.id ? 'bg-primary/8 dark:bg-primary/25 shadow-[inset_0_0_0_1px_rgba(94,177,255,0.45)]' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'}`}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
                           {getInitials(company.name)}
                         </div>
-                        <span className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{company.name}</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">{company.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <span className="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                         {company.industry || 'General'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       {companyUrl ? (
                         <a
                           href={companyUrl}
@@ -288,7 +288,7 @@ export default function Companies({ session }) {
                         <span className="text-xs text-slate-400">N/A</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3" onClick={(event) => event.stopPropagation()}>
                         <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${getStatusBadgeClass(normalizeCompanyStatus(company.status))}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${normalizeCompanyStatus(company.status) === 'inactive' ? 'bg-slate-400' : 'bg-emerald-500 shadow-sm shadow-emerald-200'}`}></span>
@@ -316,7 +316,7 @@ export default function Companies({ session }) {
 
       {selectedCompany && (
         <aside className="w-full lg:w-96 flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden sticky top-8">
+          <div className="bg-white dark:bg-slate-950/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden sticky top-8">
             <div className="p-8 border-b border-slate-50 dark:border-slate-800">
                 <div className="flex items-center gap-4 mb-6">
                 <div className="h-14 w-14 rounded-xl bg-primary flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">
@@ -344,7 +344,7 @@ export default function Companies({ session }) {
               </div>
             </div>
 
-            <div className="p-8 bg-slate-50/50 dark:bg-slate-800/30">
+            <div className="p-8 news-surface">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <span className="material-symbols-outlined text-base">rss_feed</span>
@@ -369,7 +369,7 @@ export default function Companies({ session }) {
                       href={article.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group block p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all"
+                      className="group block p-4 news-card-surface rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all"
                     >
                       <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-primary mb-2">
                         <span>{article.source || 'Unknown source'}</span>

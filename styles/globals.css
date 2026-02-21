@@ -1716,12 +1716,85 @@ textarea.input-field {
   font-weight: 700;
 }
 
-.dashboard-planner-panel {
-  min-height: 29rem;
+.dashboard-calendar-snapshot {
+  min-height: 28rem;
+  display: flex;
+  flex-direction: column;
 }
 
-.dashboard-planner-wrap {
-  height: calc(100% - 3rem);
+.dashboard-calendar-events {
+  margin-top: 0.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.58rem;
+  overflow-y: auto;
+  max-height: 18rem;
+  padding-right: 0.2rem;
+}
+
+.dashboard-calendar-event {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-soft);
+  padding: 0.68rem 0.76rem;
+  transition: border-color 170ms ease, background-color 170ms ease;
+}
+
+.dashboard-calendar-event:hover {
+  border-color: var(--border-medium);
+  background: var(--surface-hover);
+}
+
+.dashboard-calendar-event-copy {
+  min-width: 0;
+}
+
+.dashboard-calendar-event-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.dashboard-calendar-event-meta {
+  margin-top: 0.16rem;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+}
+
+.dashboard-subsurface {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+:root[data-theme='dark'] .dashboard-subsurface {
+  background: rgba(11, 18, 31, 0.78);
+}
+
+.news-surface {
+  background: rgba(15, 23, 42, 0.035);
+}
+
+:root[data-theme='dark'] .news-surface {
+  background: rgba(11, 18, 31, 0.74);
+}
+
+.news-card-surface {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.news-card-surface:hover {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+:root[data-theme='dark'] .news-card-surface {
+  background: rgba(15, 25, 41, 0.92);
+}
+
+:root[data-theme='dark'] .news-card-surface:hover {
+  background: rgba(19, 31, 51, 0.96);
 }
 
 .week-board {
@@ -2729,6 +2802,18 @@ textarea.input-field {
 
 :root[data-theme='dark'] .app-shell-root .bg-slate-100 {
   background-color: rgba(22, 36, 58, 0.94) !important;
+}
+
+:root[data-theme='dark'] .app-shell-root [class*='bg-white/'] {
+  background-color: rgba(19, 29, 48, 0.85) !important;
+}
+
+:root[data-theme='dark'] .app-shell-root [class*='bg-slate-50/'] {
+  background-color: rgba(16, 28, 48, 0.9) !important;
+}
+
+:root[data-theme='dark'] .app-shell-root [class*='bg-slate-100/'] {
+  background-color: rgba(22, 36, 58, 0.95) !important;
 }
 
 :root[data-theme='dark'] .app-shell-root .text-slate-900 {
