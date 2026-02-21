@@ -18,7 +18,7 @@ export default function Sidebar() {
 
   return (
     <aside className="shell-sidebar" aria-label="Primary navigation">
-      <div className="shell-sidebar-brand glass-panel">
+      <div className="shell-sidebar-brand">
         <div className="shell-sidebar-brand-mark">
           <span className="material-symbols-outlined">rocket_launch</span>
         </div>
@@ -28,7 +28,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="shell-sidebar-nav glass-panel">
+      <nav className="shell-sidebar-nav">
         <p className="shell-sidebar-nav-caption">Core Modules</p>
         {NAV_ITEMS.map((item, index) => {
           const isActive = isItemActive(router.pathname, item)
@@ -47,7 +47,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="shell-sidebar-footer glass-panel">
+      <div className="shell-sidebar-footer">
         <p className="shell-sidebar-footer-label">Workspace Health</p>
         <div className="shell-sidebar-meter">
           <div className="shell-sidebar-meter-fill" style={{ width: '72%' }}></div>

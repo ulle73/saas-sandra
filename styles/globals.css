@@ -370,16 +370,13 @@ button {
 }
 
 .glass-panel {
-  background: var(--bg-panel-translucent);
+  background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-md);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--radius-lg);
 }
 
 :root[data-theme='dark'] .glass-panel {
-  background: rgba(14, 23, 38, 0.8);
+  background: var(--bg-panel);
   border-color: rgba(190, 208, 235, 0.16);
 }
 
@@ -394,7 +391,6 @@ button {
   border: 1px solid var(--border-subtle);
   background: var(--bg-panel);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
 }
 
 .card-empty {
@@ -2290,6 +2286,8 @@ textarea.input-field {
   display: none;
   flex-direction: column;
   gap: 0.9rem;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-subtle);
 }
 
 .shell-sidebar-brand {

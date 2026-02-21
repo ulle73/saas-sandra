@@ -301,8 +301,8 @@ export default function AILeads({ session }) {
   if (loading) return null
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 min-h-0 lg:h-[calc(100vh-160px)] ux-section-stagger">
-      <div className="flex-1 flex flex-col gap-6 min-w-0">
+    <div className="flex flex-col lg:flex-row min-h-0 lg:h-[calc(100vh-80px)] ux-section-stagger">
+      <div className="flex-1 flex flex-col gap-6 min-w-0 p-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">AI Sales Copilot</h1>
@@ -348,7 +348,7 @@ export default function AILeads({ session }) {
 
         {error && <p className="form-error">{error}</p>}
 
-        <div className="bg-white dark:bg-slate-950/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <div className="bg-white dark:bg-slate-950/80 flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <table className="w-full table-fixed text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10">
               <tr>
@@ -410,8 +410,7 @@ export default function AILeads({ session }) {
       </div>
 
       {selectedLead && (
-        <aside className="w-full lg:w-[450px] flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-950/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden">
+        <aside className="w-full lg:w-[450px] flex flex-col bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 h-full overflow-hidden">
             <div className="p-8 border-b border-slate-50 dark:border-slate-800">
               <div className="flex items-start gap-4 mb-6">
                 <div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center text-2xl font-black shadow-xl shadow-primary/20">
@@ -535,7 +534,6 @@ export default function AILeads({ session }) {
                 </button>
               </div>
             </div>
-          </div>
         </aside>
       )}
     </div>
