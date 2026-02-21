@@ -66,7 +66,7 @@ export default function NewContact({ session, theme, toggleTheme }) {
   }
 
   return (
-      <div className="page-medium">
+      <div className="page-medium ux-fade-in">
         <form onSubmit={handleSubmit} className="card page-form stack-lg">
           {error && <p className="form-error">{error}</p>}
           <div>

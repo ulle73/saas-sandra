@@ -20,7 +20,7 @@ function normalizeCompanyStatus(value) {
 }
 
 function getStatusBadgeClass(status) {
-  if (status === 'inactive') return 'text-slate-500'
+  if (status === 'inactive') return 'text-slate-500 dark:text-slate-300'
   return 'text-emerald-600'
 }
 
@@ -162,7 +162,7 @@ export default function Companies({ session }) {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-full min-h-0">
+    <div className="flex flex-col lg:flex-row gap-8 h-full min-h-0 ux-section-stagger">
       <div className="flex-1 flex flex-col gap-6 min-w-0">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>

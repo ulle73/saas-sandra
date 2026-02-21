@@ -265,7 +265,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
   if (loading) return null // Keep first paint clean until dashboard data is ready
 
   return (
-    <div className="dashboard-stack">
+    <div className="dashboard-stack ux-section-stagger">
         
         {/* Welcome Section */}
         <section className="dashboard-welcome">

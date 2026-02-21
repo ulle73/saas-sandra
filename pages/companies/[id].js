@@ -180,7 +180,7 @@ export default function EditCompany({ session }) {
   const websitePreview = normalizeWebUrl(website)
 
   return (
-    <div className="page-wide page-stack">
+    <div className="page-wide page-stack ux-section-stagger">
       <form onSubmit={handleSave} className="card page-form stack-lg">
         <div className="between-row">
           <h1 className="section-title">Edit Company</h1>

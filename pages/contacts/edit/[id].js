@@ -95,7 +95,7 @@ export default function EditContact({ session }) {
   if (loading) return null
 
   return (
-    <div className="page-medium">
+    <div className="page-medium ux-fade-in">
       <form onSubmit={handleSubmit} className="card page-form stack-lg">
         <div className="between-row">
           <h1 className="section-title">Edit Contact</h1>

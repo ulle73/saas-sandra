@@ -217,7 +217,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
 
       cells.push(
         <div key={d} className={`min-h-[120px] border-r border-b border-slate-100 dark:border-slate-800 p-3 group transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${isToday ? 'bg-primary/[0.02] dark:bg-primary/5' : ''}`}>
-           <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${isToday ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500'}`}>
+           <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${isToday ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 dark:text-slate-400'}`}>
              {d}
            </span>
            <div className="mt-2 flex flex-col gap-1.5">
@@ -244,13 +244,13 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
   if (loading) return null
 
   return (
-      <div className="flex flex-col lg:flex-row gap-8 h-full">
+      <div className="flex flex-col lg:flex-row gap-8 h-full ux-section-stagger">
         {/* Left Sidebar Info */}
         <aside className="w-full lg:w-72 flex flex-col gap-8">
            <div className="space-y-6">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Upcoming Agenda</h3>
               {searchTerm && (
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                   Filter: "{searchTerm}" ({currentMonthEvents.length} in month)
                 </p>
               )}
@@ -293,7 +293,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                  <span className={`material-symbols-outlined ${outlookEnabled ? 'text-green-500' : 'text-primary'}`}>cloud_sync</span>
                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">{outlookEnabled ? 'Outlook Synced' : 'Sync Status'}</span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+              <p className="text-[11px] text-slate-500 dark:text-slate-300 font-medium leading-relaxed">
                  {outlookConnectionType === 'user'
                    ? 'Ditt Outlook-konto är anslutet. Möten synkas automatiskt i kalendern.'
                    : outlookConnectionType === 'legacy'
@@ -301,7 +301,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                      : 'Anslut ditt Outlook-konto för att se dina bokningar direkt i vyn.'}
               </p>
               {outlookAccount?.email && (
-                <p className="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <p className="mt-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                   Connected as: {outlookAccount.email}
                 </p>
               )}

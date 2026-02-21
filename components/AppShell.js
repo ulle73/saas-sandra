@@ -1,6 +1,7 @@
 import Head from 'next/head'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import MobileTabBar from './MobileTabBar'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 
@@ -13,26 +14,30 @@ export default function AppShell({ children, session, theme, toggleTheme, title 
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'dark' : ''}`}>
+    <div className={`app-shell-root min-h-screen ${theme === 'dark' ? 'dark' : ''}`}>
       <Head>
         <title>{title ? `${title} | CRM Admin` : 'CRM Admin'}</title>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-slate-900">
+      <div className="app-shell-layout">
         <Sidebar />
-        
-        <main className="flex-1 flex flex-col overflow-y-auto">
-          <Header 
+
+        <main className="app-shell-main">
+          <Header
             user={session?.user} 
             theme={theme} 
             onToggleTheme={toggleTheme}
             onSignOut={handleSignOut}
           />
-          
-          <div className="p-8">
-            {children}
-          </div>
+
+          <section key={router.pathname} className="app-shell-content ux-fade-in">
+            <div className="app-shell-content-inner ux-section-stagger">
+              {children}
+            </div>
+          </section>
+
+          <MobileTabBar />
         </main>
       </div>
 

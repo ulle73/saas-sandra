@@ -68,7 +68,7 @@ export default function NewCompany({ session, theme, toggleTheme }) {
   if (!session) return null
 
   return (
-      <div className="page-narrow">
+      <div className="page-narrow ux-fade-in">
         <form onSubmit={handleSubmit} className="card page-form page-stack">
           {error && <p className="form-error">{error}</p>}
           <div className="split-2">

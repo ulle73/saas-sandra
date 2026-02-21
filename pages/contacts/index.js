@@ -111,7 +111,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
   }
 
   return (
-    <>
+    <div className="ux-page-stack ux-section-stagger">
       {/* Table Header Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
@@ -229,6 +229,6 @@ export default function Contacts({ session, theme, toggleTheme }) {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   )
 }

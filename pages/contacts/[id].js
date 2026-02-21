@@ -116,7 +116,7 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
   }
 
   return (
-      <main className="max-w-[1440px] mx-auto w-full flex flex-col md:flex-row gap-8">
+      <main className="max-w-[1440px] mx-auto w-full flex flex-col md:flex-row gap-8 ux-section-stagger">
         {/* Left Sidebar: Profile Info */}
         <aside className="w-full md:w-80 flex flex-col gap-6">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
@@ -132,7 +132,7 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
                 <span className="material-symbols-outlined text-lg">edit</span>
                 Edit Profile
               </Link>
-              <button onClick={() => document.getElementById('activity-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-100 transition-all border border-slate-200 dark:border-slate-700">
+              <button onClick={() => document.getElementById('activity-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700">
                 <span className="material-symbols-outlined text-lg">history</span>
                 Timeline
               </button>
@@ -222,7 +222,7 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm text-emerald-500 font-black">check_circle</span>
-                <p className="text-xs font-bold text-slate-500 capitalize">{activities[0]?.type || 'N/A'} completed</p>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 capitalize">{activities[0]?.type || 'N/A'} completed</p>
               </div>
             </div>
 
@@ -299,7 +299,7 @@ export default function ContactDetail({ session, theme, toggleTheme }) {
                         ${act.type === 'call' ? 'bg-purple-100 text-purple-600' : 
                           act.type === 'email' ? 'bg-orange-100 text-orange-600' : 
                           act.type === 'meeting' ? 'bg-blue-100 text-blue-600' : 
-                          'bg-slate-100 text-slate-600'}`}>
+                          'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200'}`}>
                         <span className="material-symbols-outlined text-xl">
                           {act.type === 'call' ? 'call' : act.type === 'email' ? 'alternate_email' : act.type === 'meeting' ? 'groups' : 'description'}
                         </span>

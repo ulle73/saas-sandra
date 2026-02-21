@@ -14,14 +14,14 @@ export default function DashboardKPICard({ title, value, icon, trend, trendValue
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-5">
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-5">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorMap[color] || colorMap.primary}`}>
         <span className="material-symbols-outlined text-3xl">{icon}</span>
       </div>
       <div>
-        <p className="text-slate-500 text-sm font-medium">{title}</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{title}</p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{value}</h3>
           {(trend || trendValue) && (
             <span className={`${trendColorMap[trend] || 'text-slate-400'} text-xs font-bold flex items-center`}>
               {trend === 'up' && <span className="material-symbols-outlined text-sm">trending_up</span>}

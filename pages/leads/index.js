@@ -268,7 +268,7 @@ export default function AILeads({ session }) {
   if (loading) return null
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 min-h-0 lg:h-[calc(100vh-160px)]">
+    <div className="flex flex-col lg:flex-row gap-8 min-h-0 lg:h-[calc(100vh-160px)] ux-section-stagger">
       <div className="flex-1 flex flex-col gap-6 min-w-0">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
