@@ -23,8 +23,8 @@ export default function Sidebar() {
           <span className="material-symbols-outlined">rocket_launch</span>
         </div>
         <div className="shell-sidebar-brand-copy">
-          <h1 className="shell-sidebar-title">Losen CRM</h1>
-          <p className="shell-sidebar-subtitle">Revenue Workspace</p>
+          <h1 className="shell-sidebar-title">Induction</h1>
+          <p className="shell-sidebar-subtitle">Workspace</p>
         </div>
       </div>
 

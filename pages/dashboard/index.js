@@ -310,7 +310,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
         {/* Welcome Section */}
         <section className="dashboard-welcome">
           <div className="dashboard-welcome-copy">
-             <h2 className="dashboard-greeting">Good afternoon, Agent</h2>
+             <h2 className="dashboard-greeting">Good afternoon, Sandra</h2>
              <p className="dashboard-subtitle">Here&apos;s what&apos;s happening in your network today.</p>
           </div>
           <div className="dashboard-welcome-actions">

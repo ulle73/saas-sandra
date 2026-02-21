@@ -92,8 +92,8 @@ export default function Header({ user, onToggleTheme, theme, onSignOut }) {
     <header className="app-topbar">
       <div className="app-topbar-left">
         <div className="app-topbar-copy">
-          <p className="app-topbar-kicker">{headerMeta.kicker}</p>
-          <p className="app-topbar-helper">{headerMeta.helper}</p>
+          {/* <p className="app-topbar-kicker">{headerMeta.kicker}</p> */}
+          {/* <p className="app-topbar-helper">{headerMeta.helper}</p> */}
         </div>
 
         <div className={`app-topbar-search ${isSearchEnabled ? '' : 'is-disabled'}`}>
