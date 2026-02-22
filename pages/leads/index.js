@@ -9,6 +9,14 @@ function normalizeWebUrl(value) {
   return `https://${raw}`
 }
 
+function buildLinkedInPeopleSearchUrl(companyId, keyword = 'HR') {
+  const id = String(companyId || '').trim()
+  if (!id) return null
+  const encodedCompany = encodeURIComponent(JSON.stringify([id]))
+  const encodedKeyword = encodeURIComponent(String(keyword || '').trim() || 'HR')
+  return `https://www.linkedin.com/search/results/people/?keywords=${encodedKeyword}&currentCompany=${encodedCompany}`
+}
+
 function parseContactCandidates(rawValue) {
   if (!rawValue) return []
 
@@ -39,6 +47,17 @@ function parseContactCandidates(rawValue) {
 function formatStatusLabel(status) {
   if (status === 'accepted') return 'Archived'
   return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+function formatLeadCreatedDate(value) {
+  if (!value) return '-'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '-'
+  return new Intl.DateTimeFormat('sv-SE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(parsed)
 }
 
 export default function AILeads({ session }) {
@@ -110,6 +129,8 @@ export default function AILeads({ session }) {
   const selectedPrimaryCandidate = selectedLeadCandidates[0] || null
   const selectedCompanyUrl = normalizeWebUrl(selectedLead?.company_domain)
   const selectedLinkedInCompanyUrl = normalizeWebUrl(selectedLead?.linkedin_company_url)
+  const selectedLinkedInPeopleHrUrl = normalizeWebUrl(selectedLead?.linkedin_people_search_hr_url)
+    || buildLinkedInPeopleSearchUrl(selectedLead?.linkedin_company_id, 'HR')
   const selectedSourceUrl = normalizeWebUrl(selectedLead?.source_url)
 
   const statusCounts = useMemo(() => {
@@ -352,10 +373,11 @@ export default function AILeads({ session }) {
           <table className="w-full table-fixed text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10">
               <tr>
-                <th className="w-[40%] py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Company</th>
-                <th className="w-[22%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Match Score</th>
-                <th className="w-[16%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</th>
-                <th className="w-[22%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Growth Signal</th>
+                <th className="w-[34%] py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Company</th>
+                <th className="w-[20%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Match Score</th>
+                <th className="w-[14%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</th>
+                <th className="w-[18%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Growth Signal</th>
+                <th className="w-[14%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Created</th>
               </tr>
             </thead>
             <tbody>
@@ -402,6 +424,11 @@ export default function AILeads({ session }) {
                       "{item.growth_signal || item.reason}"
                     </p>
                   </td>
+                  <td className="py-4 px-3">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      {formatLeadCreatedDate(item.created_at)}
+                    </p>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -436,6 +463,11 @@ export default function AILeads({ session }) {
                 {selectedLinkedInCompanyUrl ? (
                   <a href={selectedLinkedInCompanyUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
                     Open LinkedIn company
+                  </a>
+                ) : null}
+                {selectedLinkedInPeopleHrUrl ? (
+                  <a href={selectedLinkedInPeopleHrUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
+                    Open LinkedIn HR search
                   </a>
                 ) : null}
                 {selectedSourceUrl ? (

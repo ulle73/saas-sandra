@@ -5,6 +5,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { ensureEnvLoaded } from './load-env.js'
+import { DEFAULT_AI_PROFILE, aiProfileToPrompt, normalizeAiProfileInput } from '../lib/aiProfile.js'
 
 ensureEnvLoaded()
 
@@ -118,6 +119,57 @@ const COMPANY_SUFFIXES = new Set([
   'company',
 ])
 
+const DEFAULT_TARGET_TITLE_TERMS = [
+  'chro',
+  'head of hr',
+  'hr director',
+  'head of people',
+  'vp people',
+  'hr chef',
+  'hr manager',
+  'people culture manager',
+  'people and culture manager',
+  'talent acquisition lead',
+  'ld manager',
+  'learning development manager',
+  'ceo',
+  'chief executive',
+  'vd',
+  'managing director',
+  'founder',
+  'co founder',
+]
+
+const DEFAULT_FALLBACK_TITLE_TERMS = [
+  'hr business partner',
+  'people partner',
+  'recruiter',
+  'talent acquisition specialist',
+]
+
+const DEFAULT_EXCLUDED_TITLE_TERMS = [
+  'intern',
+  'internship',
+  'student',
+  'trainee',
+  'assistent',
+  'assistant',
+  'junior',
+  'summer',
+  'praktik',
+  'degree',
+  'thesis',
+]
+
+const EXECUTIVE_TITLE_TERMS = [
+  'ceo',
+  'chief executive',
+  'vd',
+  'managing director',
+  'founder',
+  'co founder',
+]
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Missing Supabase credentials (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)')
   process.exit(1)
@@ -143,6 +195,7 @@ function parsePositiveInt(value, fallback, min, max) {
 }
 
 let rapidApiKeyCursor = 0
+let hasWarnedMissingAiProfilesTable = false
 
 function nextRapidApiKey() {
   if (!RAPIDAPI_KEYS.length) return { key: null, keyIndex: -1 }
@@ -622,7 +675,73 @@ function buildHeuristicCandidate(article) {
   }
 }
 
-async function analyzeArticle(article) {
+function buildLinkedInPeopleSearchUrl(companyId, keyword = 'HR') {
+  const id = String(companyId || '').trim()
+  if (!id) return null
+  const encodedCompany = encodeURIComponent(JSON.stringify([id]))
+  const encodedKeyword = encodeURIComponent(String(keyword || '').trim() || 'HR')
+  return `https://www.linkedin.com/search/results/people/?keywords=${encodedKeyword}&currentCompany=${encodedCompany}`
+}
+
+function summarizeCandidatePool(candidates) {
+  const tierCounts = candidates.reduce((acc, candidate) => {
+    const key = candidate.tier || 'unknown'
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+
+  return {
+    total: candidates.length,
+    strict: tierCounts.strict || 0,
+    relaxed: tierCounts.relaxed || 0,
+    watchlist: tierCounts.watchlist || 0,
+  }
+}
+
+function normalizeTitleForMatch(value) {
+  return normalizeForLookup(value)
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function splitKeywordList(value) {
+  return String(value || '')
+    .split(/[\n,;|]/g)
+    .map((token) => token.trim())
+    .filter(Boolean)
+}
+
+function dedupeTerms(values) {
+  return [...new Set(values.filter(Boolean))]
+}
+
+function normalizeTitleTerms(rawValue, fallbackTerms) {
+  const fromProfile = splitKeywordList(rawValue)
+    .map((term) => normalizeTitleForMatch(term))
+    .filter(Boolean)
+
+  if (fromProfile.length) return dedupeTerms(fromProfile)
+  return dedupeTerms(fallbackTerms.map((term) => normalizeTitleForMatch(term)))
+}
+
+function buildPersonTitleStrategy(aiProfileInput = DEFAULT_AI_PROFILE) {
+  const profile = normalizeAiProfileInput(aiProfileInput)
+  return {
+    targetTerms: normalizeTitleTerms(profile.target_titles, DEFAULT_TARGET_TITLE_TERMS),
+    fallbackTerms: normalizeTitleTerms(profile.fallback_titles, DEFAULT_FALLBACK_TITLE_TERMS),
+    excludedTerms: normalizeTitleTerms(profile.excluded_titles, DEFAULT_EXCLUDED_TITLE_TERMS),
+    executiveTerms: dedupeTerms(EXECUTIVE_TITLE_TERMS.map((term) => normalizeTitleForMatch(term))),
+  }
+}
+
+function titleIncludesAny(normalizedTitle, terms) {
+  return terms.some((term) => term && normalizedTitle.includes(term))
+}
+
+async function analyzeArticle(article, aiProfileInput = DEFAULT_AI_PROFILE) {
+  const aiProfile = normalizeAiProfileInput(aiProfileInput)
+  const profilePrompt = aiProfileToPrompt(aiProfile)
   const prompt = `
 Du ar en svensk B2B-sales analytiker.
 Malet ar att hitta NYA bolag med dessa kriterier:
@@ -637,6 +756,11 @@ Regler:
 - pitch max 220 tecken
 - confidence-falt maste vara: "high" | "medium" | "low"
 - growth_signal maste vara en av: hiring, expansion, order, partnership, public_procurement, investment, restructuring, media
+
+Kundprofil att ta hansyn till:
+${profilePrompt}
+
+Anpassa prioritering och resonemang efter kundprofilen ovan, men folj alltid output-formatet exakt.
 
 Returnera ENDAST JSON:
 {
@@ -769,14 +893,14 @@ url: ${article.url}
   }
 }
 
-async function extractCandidatesFromArticles(articles) {
+async function extractCandidatesFromArticles(articles, aiProfileInput = DEFAULT_AI_PROFILE) {
   const byCompany = new Map()
   const articleDecisions = []
 
   for (const article of articles) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      const analysis = await analyzeArticle(article)
+      const analysis = await analyzeArticle(article, aiProfileInput)
       if (!analysis?.candidate) {
         articleDecisions.push({
           title: article.title,
@@ -1140,50 +1264,49 @@ function normalizeLeadPerson(rawPerson, companyId, companyName, page, requestCou
   }
 }
 
-function scoreLeadTitle(titleRaw) {
-  const title = normalizeForLookup(titleRaw)
-  const negative = [
-    'intern',
-    'internship',
-    'student',
-    'trainee',
-    'assistent',
-    'assistant',
-    'junior',
-    'summer',
-    'praktik',
-    'degree',
-    'thesis',
-  ]
+function scoreLeadTitle(titleRaw, titleStrategy = buildPersonTitleStrategy(DEFAULT_AI_PROFILE)) {
+  const title = normalizeTitleForMatch(titleRaw)
 
-  if (negative.some((term) => title.includes(term))) {
-    return { score: -999, reason: 'Exkluderad: junior/intern' }
+  if (!title) {
+    return { score: 0, reason: 'Saknar titel' }
+  }
+
+  const isExecutive = titleIncludesAny(title, titleStrategy.executiveTerms)
+  if (titleIncludesAny(title, titleStrategy.excludedTerms)) {
+    return { score: -999, reason: 'Exkluderad: titel i blockeringslista' }
   }
 
   const consultantLike = title.includes('consultant') || title.includes('consulting')
-  const execLike = /(ceo|chief executive|vd|managing director|founder|co founder|co-founder)/.test(title)
-  if (consultantLike && !execLike) {
+  if (consultantLike && !isExecutive) {
     return { score: -999, reason: 'Exkluderad: konsultroll' }
   }
 
-  if (/(ceo|chief executive|vd|managing director|founder|co founder|co-founder)/.test(title)) {
-    return { score: 4, reason: 'Ledningsroll match' }
+  if (titleIncludesAny(title, titleStrategy.targetTerms)) {
+    return { score: 4, reason: 'Profilmatch: prioriterad roll' }
   }
+
+  if (titleIncludesAny(title, titleStrategy.fallbackTerms)) {
+    return { score: 2, reason: 'Profilmatch: fallback-roll' }
+  }
+
   if (/(chro|head of hr|hr director|head of people|vp people)/.test(title)) {
-    return { score: 4, reason: 'Senior HR match' }
+    return { score: 4, reason: 'Senior HR match (fallback)' }
   }
-  if (/(hr manager|people & culture manager|people and culture manager|talent acquisition lead)/.test(title)) {
-    return { score: 3, reason: 'HR Manager match' }
+  if (/(hr manager|people culture manager|people and culture manager|talent acquisition lead)/.test(title)) {
+    return { score: 3, reason: 'HR Manager match (fallback)' }
+  }
+  if (/(ceo|chief executive|vd|managing director|founder|co founder)/.test(title)) {
+    return { score: 4, reason: 'Ledningsroll match (fallback)' }
   }
   if (/(recruiter|talent acquisition specialist)/.test(title)) {
-    return { score: 1, reason: 'Recruiting match' }
+    return { score: 1, reason: 'Recruiting match (fallback)' }
   }
 
   return { score: 0, reason: 'Ingen prioriterad titelmatch' }
 }
 
-function isDecisionMaker(titleRaw) {
-  return scoreLeadTitle(titleRaw).score >= 3
+function isDecisionMaker(titleRaw, titleStrategy = buildPersonTitleStrategy(DEFAULT_AI_PROFILE)) {
+  return scoreLeadTitle(titleRaw, titleStrategy).score >= 3
 }
 
 function extractPeopleRows(payload) {
@@ -1228,7 +1351,7 @@ function extractPaginationHints(payload) {
   return { hasMore, nextPage, totalPages }
 }
 
-async function fetchCompanyPeople(companyId, companyName, requestCounters, deadlineMs = null) {
+async function fetchCompanyPeople(companyId, companyName, requestCounters, deadlineMs = null, titleStrategy = buildPersonTitleStrategy(DEFAULT_AI_PROFILE)) {
   const peopleByUrl = new Map()
   let pagesFetched = 0
   let decisionMakerCount = 0
@@ -1283,7 +1406,7 @@ async function fetchCompanyPeople(companyId, companyName, requestCounters, deadl
       }
 
       peopleByUrl.set(person.profile_url, person)
-      if (isDecisionMaker(person.title || '')) {
+      if (isDecisionMaker(person.title || '', titleStrategy)) {
         decisionMakerCount += 1
       }
     }
@@ -1334,10 +1457,10 @@ async function fetchCompanyPeople(companyId, companyName, requestCounters, deadl
   }
 }
 
-function buildShortlistFromPeople(people) {
+function buildShortlistFromPeople(people, titleStrategy = buildPersonTitleStrategy(DEFAULT_AI_PROFILE)) {
   const shortlist = people
     .map((person) => {
-      const scored = scoreLeadTitle(person.title || '')
+      const scored = scoreLeadTitle(person.title || '', titleStrategy)
       return {
         person,
         score: scored.score,
@@ -1369,8 +1492,8 @@ async function writeAiLeadsFile({
   outputPath,
   requestCounters,
 }) {
-  const backupHrUrl = `https://www.linkedin.com/search/results/people/?keywords=HR&currentCompany=${encodeURIComponent(JSON.stringify([companyInfo.company_id]))}`
-  const backupCeoUrl = `https://www.linkedin.com/search/results/people/?keywords=CEO&currentCompany=${encodeURIComponent(JSON.stringify([companyInfo.company_id]))}`
+  const backupHrUrl = buildLinkedInPeopleSearchUrl(companyInfo.company_id, 'HR')
+  const backupCeoUrl = buildLinkedInPeopleSearchUrl(companyInfo.company_id, 'CEO')
 
   const payload = {
     company: {
@@ -1450,9 +1573,12 @@ async function persistContactCandidatesForLead({ userId, candidate, contactCandi
 }
 
 async function persistLinkedInCompanyMatchForLead({ userId, candidate, companyInfo }) {
+  const companyId = String(companyInfo.company_id || '').trim()
   const payload = {
-    linkedin_company_id: String(companyInfo.company_id || ''),
+    linkedin_company_id: companyId,
     linkedin_company_url: companyInfo.company_url || null,
+    linkedin_people_search_hr_url: buildLinkedInPeopleSearchUrl(companyId, 'HR'),
+    linkedin_people_search_ceo_url: buildLinkedInPeopleSearchUrl(companyId, 'CEO'),
   }
 
   const { error } = await supabase
@@ -1463,8 +1589,8 @@ async function persistLinkedInCompanyMatchForLead({ userId, candidate, companyIn
     .eq('source_url', candidate.sourceUrl)
 
   if (!error) return
-  if (/column .*linkedin_company_id|column .*linkedin_company_url/i.test(String(error.message || ''))) {
-    console.warn('lead_discovery_items.linkedin_company_id/linkedin_company_url saknas i databasen. Kör senaste supabase/schema.sql.')
+  if (/column .*linkedin_company_id|column .*linkedin_company_url|column .*linkedin_people_search_hr_url|column .*linkedin_people_search_ceo_url/i.test(String(error.message || ''))) {
+    console.warn('lead_discovery_items.linkedin_company_* / linkedin_people_search_* saknas i databasen. Kör senaste supabase/schema.sql.')
     return
   }
   throw error
@@ -1482,6 +1608,35 @@ async function fetchUserIds() {
   }
 
   return [...new Set([...(companies || []), ...(contacts || []), ...(discovery || [])].map((row) => row.user_id).filter(Boolean))]
+}
+
+async function fetchAiProfilesByUserIds(userIds) {
+  const profileMap = new Map()
+  if (!userIds.length) return profileMap
+
+  const { data, error } = await supabase
+    .from('ai_profiles')
+    .select('user_id, assistant_prompt, icp_description, offer_summary, priority_signals, avoid_signals, cta_style, target_titles, fallback_titles, excluded_titles, custom_instructions')
+    .in('user_id', userIds)
+
+  if (error) {
+    const message = String(error.message || '')
+    if (/ai_profiles/i.test(message)) {
+      if (!hasWarnedMissingAiProfilesTable) {
+        console.warn('ai_profiles saknas i databasen. Kor senaste supabase/schema.sql for kundspecifika AI-profiler.')
+        hasWarnedMissingAiProfilesTable = true
+      }
+      return profileMap
+    }
+    throw error
+  }
+
+  for (const row of data || []) {
+    if (!row?.user_id) continue
+    profileMap.set(row.user_id, normalizeAiProfileInput(row))
+  }
+
+  return profileMap
 }
 
 async function fetchExistingCompanySet(userId) {
@@ -1625,38 +1780,40 @@ async function generateForUser(userId, candidates) {
 async function ensureDiscoverySchema() {
   const { error } = await supabase
     .from('lead_discovery_items')
-    .select('company_name, status, source_url, contact_candidates, linkedin_company_id, linkedin_company_url')
+    .select('company_name, status, source_url, contact_candidates, linkedin_company_id, linkedin_company_url, linkedin_people_search_hr_url, linkedin_people_search_ceo_url')
     .limit(1)
 
   if (error) {
     throw new Error(
-      'Database schema is outdated for AI lead discovery. Apply latest supabase/schema.sql (lead_discovery_items + contact_candidates + linkedin_company_id/url).'
+      'Database schema is outdated for AI lead discovery. Apply latest supabase/schema.sql (lead_discovery_items + contact_candidates + linkedin_company_* + linkedin_people_search_*).'
     )
   }
 }
 
-async function runCompanyPeopleFlow(userId, selectedCandidates) {
+async function runCompanyPeopleFlow(userId, selectedCandidates, aiProfileInput = DEFAULT_AI_PROFILE) {
   if (!selectedCandidates.length) return { generatedFiles: 0, failedFiles: 0 }
   if (!RAPIDAPI_KEYS.length) {
     console.log(`User ${userId}: skipped company->people flow (no RapidAPI keys configured).`)
     return { generatedFiles: 0, failedFiles: selectedCandidates.length }
   }
 
+  const titleStrategy = buildPersonTitleStrategy(aiProfileInput)
+
   await fs.mkdir(OUTPUT_DIR, { recursive: true })
   let generatedFiles = 0
   let failedFiles = 0
-  const candidatesToProcess = selectedCandidates.slice(0, COMPANY_PEOPLE_MAX_CANDIDATES)
+  const peopleEnrichmentLimit = Math.min(COMPANY_PEOPLE_MAX_CANDIDATES, selectedCandidates.length)
 
-  if (selectedCandidates.length > candidatesToProcess.length) {
+  if (selectedCandidates.length > peopleEnrichmentLimit) {
     console.log(
-      `User ${userId}: limiting company->people to ${candidatesToProcess.length}/${selectedCandidates.length} candidates (COMPANY_PEOPLE_MAX_CANDIDATES=${COMPANY_PEOPLE_MAX_CANDIDATES}).`
+      `User ${userId}: company match/LinkedIn URLs will run for ${selectedCandidates.length} candidates. People enrichment limited to ${peopleEnrichmentLimit}/${selectedCandidates.length} (COMPANY_PEOPLE_MAX_CANDIDATES=${COMPANY_PEOPLE_MAX_CANDIDATES}).`
     )
   }
 
-  for (let index = 0; index < candidatesToProcess.length; index += 1) {
-    const candidate = candidatesToProcess[index]
+  for (let index = 0; index < selectedCandidates.length; index += 1) {
+    const candidate = selectedCandidates[index]
     try {
-      console.log(`[FLOW] ${index + 1}/${candidatesToProcess.length} start: ${candidate.companyName}`)
+      console.log(`[FLOW] ${index + 1}/${selectedCandidates.length} start: ${candidate.companyName}`)
       const requestCounters = createRequestCounters()
       const deadlineMs = Date.now() + COMPANY_PEOPLE_CANDIDATE_TIMEOUT_MS
 
@@ -1668,9 +1825,23 @@ async function runCompanyPeopleFlow(userId, selectedCandidates) {
         continue
       }
 
+      // Save LinkedIn company + people search URLs as soon as company match is found.
+      // This keeps manual HR search available even if people enrichment fails later.
       // eslint-disable-next-line no-await-in-loop
-      const peopleResult = await fetchCompanyPeople(companyInfo.company_id, companyInfo.name, requestCounters, deadlineMs)
-      const shortlist = buildShortlistFromPeople(peopleResult.people)
+      await persistLinkedInCompanyMatchForLead({
+        userId,
+        candidate,
+        companyInfo,
+      })
+
+      if (index >= peopleEnrichmentLimit) {
+        console.log(`- ${companyInfo.name}: linked company match saved, skipped people enrichment due cap`)
+        continue
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      const peopleResult = await fetchCompanyPeople(companyInfo.company_id, companyInfo.name, requestCounters, deadlineMs, titleStrategy)
+      const shortlist = buildShortlistFromPeople(peopleResult.people, titleStrategy)
       const contactCandidates = toContactCandidates(shortlist)
       const fileName = `${slugify(companyInfo.name)}_${companyInfo.company_id}_ai_leads.json`
       const outputPath = path.join(OUTPUT_DIR, fileName)
@@ -1684,12 +1855,6 @@ async function runCompanyPeopleFlow(userId, selectedCandidates) {
         shortlist,
         outputPath,
         requestCounters,
-      })
-      // eslint-disable-next-line no-await-in-loop
-      await persistLinkedInCompanyMatchForLead({
-        userId,
-        candidate,
-        companyInfo,
       })
       // eslint-disable-next-line no-await-in-loop
       await persistContactCandidatesForLead({
@@ -1728,41 +1893,54 @@ async function main() {
     return
   }
 
+  const aiProfilesByUser = await fetchAiProfilesByUserIds(userIds)
   console.log(`Fetched ${articles.length} discovery articles`)
-  const { candidates, articleDecisions } = await extractCandidatesFromArticles(articles)
-  const candidateTierCount = candidates.reduce((acc, candidate) => {
-    const key = candidate.tier || 'unknown'
-    acc[key] = (acc[key] || 0) + 1
-    return acc
-  }, {})
-  console.log(`Candidate pool: total=${candidates.length}, strict=${candidateTierCount.strict || 0}, relaxed=${candidateTierCount.relaxed || 0}, watchlist=${candidateTierCount.watchlist || 0}`)
+  console.log(`Loaded AI profiles for ${aiProfilesByUser.size}/${userIds.length} users (others use default profile).`)
 
-  if (LEADS_DEBUG) {
-    console.log('[DEBUG] Article decisions:')
-    for (const decision of articleDecisions) {
-      console.log(
-        `- ${decision.outcome.toUpperCase()} | ${decision.reason} | ${decision.title}${decision.companyName ? ` | company=${decision.companyName}` : ''}`
-      )
-    }
-  }
-
-  if (!candidates.length) {
-    console.log('No valid candidates left after AI criteria filtering.')
-    return
-  }
+  const candidatePoolCache = new Map()
 
   let totalInserted = 0
   let totalGeneratedAiFiles = 0
   let totalFailedAiFiles = 0
   for (const userId of userIds) {
     try {
+      const profile = aiProfilesByUser.get(userId) || DEFAULT_AI_PROFILE
+      const profileKey = JSON.stringify(profile)
+      let extraction = candidatePoolCache.get(profileKey)
+
+      if (!extraction) {
+        // eslint-disable-next-line no-await-in-loop
+        extraction = await extractCandidatesFromArticles(articles, profile)
+        candidatePoolCache.set(profileKey, extraction)
+        const summary = summarizeCandidatePool(extraction.candidates)
+        console.log(
+          `Candidate pool (profile cache miss): total=${summary.total}, strict=${summary.strict}, relaxed=${summary.relaxed}, watchlist=${summary.watchlist}`
+        )
+      }
+
+      if (LEADS_DEBUG) {
+        console.log(`[DEBUG] Prompt profile used for user ${userId}:`)
+        console.log(aiProfileToPrompt(profile))
+        console.log(`[DEBUG] Article decisions for user ${userId}:`)
+        for (const decision of extraction.articleDecisions) {
+          console.log(
+            `- ${decision.outcome.toUpperCase()} | ${decision.reason} | ${decision.title}${decision.companyName ? ` | company=${decision.companyName}` : ''}`
+          )
+        }
+      }
+
+      if (!extraction.candidates.length) {
+        console.log(`User ${userId}: no valid candidates after profile-aware filtering.`)
+        continue
+      }
+
       // eslint-disable-next-line no-await-in-loop
-      const { insertedCount, candidateDecisions, selectedCandidates } = await generateForUser(userId, candidates)
+      const { insertedCount, candidateDecisions, selectedCandidates } = await generateForUser(userId, extraction.candidates)
       totalInserted += insertedCount
       console.log(`User ${userId}: inserted ${insertedCount} discovery leads`)
 
       // eslint-disable-next-line no-await-in-loop
-      const { generatedFiles, failedFiles } = await runCompanyPeopleFlow(userId, selectedCandidates)
+      const { generatedFiles, failedFiles } = await runCompanyPeopleFlow(userId, selectedCandidates, profile)
       totalGeneratedAiFiles += generatedFiles
       totalFailedAiFiles += failedFiles
 

@@ -116,6 +116,8 @@ create table if not exists public.lead_discovery_items (
   source_published_at timestamptz,
   linkedin_company_id text,
   linkedin_company_url text,
+  linkedin_people_search_hr_url text,
+  linkedin_people_search_ceo_url text,
   contact_candidates jsonb not null default '[]'::jsonb,
   status text not null default 'new' check (status in ('new', 'accepted', 'rejected', 'converted')),
   reviewed_at timestamptz,
@@ -136,6 +138,22 @@ create table if not exists public.user_outlook_connections (
   token_type text,
   scope text,
   expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.ai_profiles (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  assistant_prompt text not null default '',
+  icp_description text not null default '',
+  offer_summary text not null default '',
+  priority_signals text not null default '',
+  avoid_signals text not null default '',
+  cta_style text not null default '',
+  target_titles text not null default '',
+  fallback_titles text not null default '',
+  excluded_titles text not null default '',
+  custom_instructions text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -170,6 +188,12 @@ alter table public.lead_discovery_items
 alter table public.lead_discovery_items
   add column if not exists linkedin_company_url text;
 
+alter table public.lead_discovery_items
+  add column if not exists linkedin_people_search_hr_url text;
+
+alter table public.lead_discovery_items
+  add column if not exists linkedin_people_search_ceo_url text;
+
 alter table public.user_outlook_connections
   add column if not exists microsoft_user_id text;
 
@@ -198,6 +222,42 @@ alter table public.user_outlook_connections
   add column if not exists created_at timestamptz not null default now();
 
 alter table public.user_outlook_connections
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.ai_profiles
+  add column if not exists assistant_prompt text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists icp_description text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists offer_summary text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists priority_signals text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists avoid_signals text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists cta_style text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists target_titles text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists fallback_titles text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists excluded_titles text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists custom_instructions text not null default '';
+
+alter table public.ai_profiles
+  add column if not exists created_at timestamptz not null default now();
+
+alter table public.ai_profiles
   add column if not exists updated_at timestamptz not null default now();
 
 alter table public.weekly_leads
@@ -245,6 +305,7 @@ create index if not exists idx_lead_discovery_user_id on public.lead_discovery_i
 create index if not exists idx_lead_discovery_status on public.lead_discovery_items (status);
 create index if not exists idx_lead_discovery_score on public.lead_discovery_items (score desc);
 create index if not exists idx_lead_discovery_created_at on public.lead_discovery_items (created_at desc);
+create index if not exists idx_ai_profiles_updated_at on public.ai_profiles (updated_at desc);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -277,6 +338,12 @@ execute function public.set_updated_at();
 drop trigger if exists trg_outlook_connections_updated_at on public.user_outlook_connections;
 create trigger trg_outlook_connections_updated_at
 before update on public.user_outlook_connections
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists trg_ai_profiles_updated_at on public.ai_profiles;
+create trigger trg_ai_profiles_updated_at
+before update on public.ai_profiles
 for each row
 execute function public.set_updated_at();
 
@@ -383,6 +450,7 @@ alter table public.news_items enable row level security;
 alter table public.weekly_leads enable row level security;
 alter table public.lead_discovery_items enable row level security;
 alter table public.user_outlook_connections enable row level security;
+alter table public.ai_profiles enable row level security;
 
 drop policy if exists companies_select_own on public.companies;
 drop policy if exists companies_insert_own on public.companies;
@@ -466,6 +534,20 @@ for insert with check (auth.uid() = user_id);
 create policy lead_discovery_update_own on public.lead_discovery_items
 for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy lead_discovery_delete_own on public.lead_discovery_items
+for delete using (auth.uid() = user_id);
+
+drop policy if exists ai_profiles_select_own on public.ai_profiles;
+drop policy if exists ai_profiles_insert_own on public.ai_profiles;
+drop policy if exists ai_profiles_update_own on public.ai_profiles;
+drop policy if exists ai_profiles_delete_own on public.ai_profiles;
+
+create policy ai_profiles_select_own on public.ai_profiles
+for select using (auth.uid() = user_id);
+create policy ai_profiles_insert_own on public.ai_profiles
+for insert with check (auth.uid() = user_id);
+create policy ai_profiles_update_own on public.ai_profiles
+for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy ai_profiles_delete_own on public.ai_profiles
 for delete using (auth.uid() = user_id);
 
 commit;

@@ -23,6 +23,7 @@ const HEADER_META = {
   '/companies/[id]': { kicker: 'Company', helper: 'Tune keywords and validate incoming news quality.' },
   '/leads': { kicker: 'AI Leads', helper: 'Prioritize high-signal opportunities with confidence.' },
   '/calendar': { kicker: 'Calendar', helper: 'Align meetings with week execution and follow-ups.' },
+  '/settings/ai-profile': { kicker: 'AI Profile', helper: 'Tune AI lead behavior to match your sales motion.' },
 }
 
 export default function Header({ user, onToggleTheme, theme, onSignOut }) {

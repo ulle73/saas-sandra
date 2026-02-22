@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { label: 'Companies', icon: 'corporate_fare', href: '/companies', match: ['/companies'] },
   { label: 'AI Leads', icon: 'auto_awesome', href: '/leads', match: ['/leads'], badge: 'New' },
   { label: 'Calendar', icon: 'calendar_today', href: '/calendar', match: ['/calendar'] },
+  { label: 'AI Profile', icon: 'tune', href: '/settings/ai-profile', match: ['/settings/ai-profile'] },
 ]
 
 function isItemActive(pathname, item) {

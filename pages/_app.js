@@ -15,6 +15,7 @@ const SHELL_TITLES = {
   '/companies/[id]': 'Edit Company',
   '/leads': 'AI Leads',
   '/calendar': 'Calendar',
+  '/settings/ai-profile': 'AI Profile',
 }
 
 function MyApp({ Component, pageProps }) {
