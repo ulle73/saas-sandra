@@ -59,6 +59,7 @@ const PEOPLE_TARGET_DECISION_MAKERS = parsePositiveInt(process.env.PEOPLE_TARGET
 const SHORTLIST_LIMIT = parsePositiveInt(process.env.SHORTLIST_LIMIT, 15, 5, 50)
 const STRICT_SWEDEN_ONLY = String(process.env.STRICT_SWEDEN_ONLY || 'true').toLowerCase() === 'true'
 const HEURISTIC_FALLBACK_LIMIT = parsePositiveInt(process.env.LEADS_DISCOVERY_HEURISTIC_FALLBACK_LIMIT, 8, 1, 30)
+const LEADS_USER_ID = String(process.env.LEADS_USER_ID || '').trim() || null
 
 const COMPANY_SEARCH_HOST = 'linkedin-jobs-data-api.p.rapidapi.com'
 const COMPANY_SEARCH_URL = `https://${COMPANY_SEARCH_HOST}/companies/search`
@@ -1881,10 +1882,21 @@ async function main() {
   console.log(`Discovery config: lookback_days=${LOOKBACK_DAYS}, max_articles=${MAX_SOURCE_ARTICLES}, newsapi=${DISCOVERY_INCLUDE_NEWSAPI}, google_rss=${DISCOVERY_INCLUDE_GOOGLE_RSS}`)
   console.log(`Discovery queries (${DISCOVERY_QUERIES.length}): ${DISCOVERY_QUERIES.join(' || ')}`)
   await ensureDiscoverySchema()
-  const [userIds, articles] = await Promise.all([fetchUserIds(), fetchDiscoveryArticles()])
+  const [allUserIds, articles] = await Promise.all([fetchUserIds(), fetchDiscoveryArticles()])
+  const userIds = LEADS_USER_ID
+    ? allUserIds.filter((userId) => userId === LEADS_USER_ID)
+    : allUserIds
+
+  if (LEADS_USER_ID) {
+    console.log(`Lead generation scoped to user: ${LEADS_USER_ID}`)
+  }
 
   if (!userIds.length) {
-    console.log('No users found with CRM data.')
+    if (LEADS_USER_ID) {
+      console.log(`No CRM data found for scoped user ${LEADS_USER_ID}.`)
+    } else {
+      console.log('No users found with CRM data.')
+    }
     return
   }
 

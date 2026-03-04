@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { useRouter } from 'next/router'
 import AppShell from '../components/AppShell'
 
+const AUTH_BOOT_TIMEOUT_MS = 8000
+
 const SHELL_TITLES = {
   '/dashboard': 'Overview',
   '/contacts': 'Contacts',
@@ -25,18 +27,47 @@ function MyApp({ Component, pageProps }) {
   const [theme, setTheme] = useState('dark')
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
+    let isMounted = true
+
+    const getSessionWithTimeout = () => new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Auth init timed out after ${AUTH_BOOT_TIMEOUT_MS}ms`))
+      }, AUTH_BOOT_TIMEOUT_MS)
+
+      supabase.auth.getSession()
+        .then((result) => {
+          clearTimeout(timeout)
+          resolve(result)
+        })
+        .catch((error) => {
+          clearTimeout(timeout)
+          reject(error)
+        })
     })
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await getSessionWithTimeout()
+        if (isMounted) setSession(session)
+      } catch (error) {
+        console.error('Failed to initialize Supabase auth session:', error)
+        if (isMounted) setSession(null)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    initializeAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
+      if (isMounted) setSession(session)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {

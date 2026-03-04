@@ -65,6 +65,9 @@ export default function AILeads({ session }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [generationLoading, setGenerationLoading] = useState(false)
+  const [generationError, setGenerationError] = useState('')
+  const [generationInfo, setGenerationInfo] = useState('')
   const [statusFilter, setStatusFilter] = useState('new')
   const [selectedLead, setSelectedLead] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -98,6 +101,100 @@ export default function AILeads({ session }) {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getAccessToken = async () => {
+    if (session?.access_token) return session.access_token
+    const { data } = await supabase.auth.getSession()
+    return data?.session?.access_token || null
+  }
+
+  const parseApiPayload = async (response) => {
+    const raw = await response.text()
+    try {
+      return raw ? JSON.parse(raw) : {}
+    } catch {
+      return {}
+    }
+  }
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+  const pollGenerationStatus = async (accessToken, maxAttempts = 80) => {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const response = await fetch('/api/leads/generate', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      const payload = await parseApiPayload(response)
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to fetch generation status.')
+      }
+
+      const job = payload?.job || {}
+      if (job.running) {
+        setGenerationInfo('Lead generation is running...')
+        await sleep(3000)
+        continue
+      }
+
+      if (job.status === 'failed') {
+        throw new Error(job.error || 'Lead generation failed.')
+      }
+
+      if (job.status === 'succeeded') {
+        const countText = Number.isFinite(Number(job.insertedCount))
+          ? ` ${job.insertedCount} new leads added.`
+          : ''
+        setGenerationInfo(`Lead generation completed.${countText}`)
+        await loadData()
+        return
+      }
+
+      return
+    }
+
+    setGenerationInfo('Lead generation is still running. Refresh in a moment.')
+  }
+
+  const handleGenerateLeads = async () => {
+    setGenerationError('')
+    setGenerationInfo('')
+    setGenerationLoading(true)
+
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        throw new Error('You are not logged in. Please sign in again.')
+      }
+
+      const response = await fetch('/api/leads/generate', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      const payload = await parseApiPayload(response)
+
+      if (response.status === 409) {
+        setGenerationInfo('Lead generation is already running. Waiting for completion...')
+        await pollGenerationStatus(accessToken)
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to start lead generation.')
+      }
+
+      setGenerationInfo('Lead generation started. Fetching status...')
+      await pollGenerationStatus(accessToken)
+    } catch (err) {
+      setGenerationError(err.message || 'Failed to generate leads.')
+    } finally {
+      setGenerationLoading(false)
     }
   }
 
@@ -329,20 +426,31 @@ export default function AILeads({ session }) {
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">AI Sales Copilot</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">New Potential Opportunities</p>
           </div>
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-            {['new', 'accepted', 'rejected', 'converted'].map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all capitalize ${
-                  statusFilter === status
-                    ? 'bg-white dark:bg-slate-700 shadow-sm text-primary'
-                    : 'text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-white'
-                }`}
-              >
-                {formatStatusLabel(status)} ({statusCounts[status] || 0})
-              </button>
-            ))}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={handleGenerateLeads}
+              disabled={generationLoading}
+              className="px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-60"
+            >
+              {generationLoading ? 'Generating...' : 'Generate New Leads'}
+            </button>
+
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              {['new', 'accepted', 'rejected', 'converted'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all capitalize ${
+                    statusFilter === status
+                      ? 'bg-white dark:bg-slate-700 shadow-sm text-primary'
+                      : 'text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-white'
+                  }`}
+                >
+                  {formatStatusLabel(status)} ({statusCounts[status] || 0})
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -368,6 +476,8 @@ export default function AILeads({ session }) {
         </div>
 
         {error && <p className="form-error">{error}</p>}
+        {generationError ? <p className="form-error">{generationError}</p> : null}
+        {generationInfo ? <p className="form-info">{generationInfo}</p> : null}
 
         <div className="bg-white dark:bg-slate-950/80 flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <table className="w-full table-fixed text-left border-collapse">
