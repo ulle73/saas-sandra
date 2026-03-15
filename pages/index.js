@@ -51,9 +51,6 @@ export default function Home({ session, theme, toggleTheme }) {
 
   return (
     <div className="auth-page">
-        {/* Background blobs for visual interest */}
-        <div className="auth-blob auth-blob-left"></div>
-        <div className="auth-blob auth-blob-right"></div>
 
         <div className="auth-card-wrap">
             <div className="auth-theme-row">

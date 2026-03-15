@@ -147,17 +147,17 @@ export default function Contacts({ session, theme, toggleTheme }) {
   return (
     <div className="ux-page-stack ux-section-stagger">
       {/* Table Header Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Contacts</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Contacts</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{contacts.length} total relationships managed</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+          <button onClick={handleExport} className="btn-secondary">
             <span className="material-symbols-outlined text-lg">file_download</span>
             Export
           </button>
-          <Link href="/contacts/new" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+          <Link href="/contacts/new" className="btn-primary">
             <span className="material-symbols-outlined text-lg">add</span>
             Add Contact
           </Link>
@@ -175,21 +175,21 @@ export default function Contacts({ session, theme, toggleTheme }) {
       </section>
 
       {/* Filters Area */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 mb-6 flex flex-wrap gap-4 items-center">
+      <div className="glass-panel p-4 mb-6 flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[300px] relative group">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors">search</span>
           <input
             type="text"
             placeholder="Search by name, email, or company..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm text-slate-700 dark:text-slate-100 transition-all"
+            className="input-field pl-10"
           />
         </div>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none cursor-pointer"
+          className="input-field w-auto min-w-[160px]"
         >
           <option value="all">All Statuses</option>
           <option value="green">Upcoming Activity</option>
@@ -201,18 +201,18 @@ export default function Contacts({ session, theme, toggleTheme }) {
       {error && <p className="p-4 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 mb-6">{error}</p>}
 
       {/* Contact Data Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden overflow-x-hidden custom-scrollbar">
+      <div className="glass-panel overflow-hidden overflow-x-hidden custom-scrollbar">
         <table className="w-full table-fixed text-left border-collapse">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-              <th className="w-[28%] px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Contact Name</th>
-              <th className="w-[26%] px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Email Address</th>
-              <th className="w-[20%] px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Linked Company</th>
-              <th className="w-[18%] px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Relationship Status</th>
-              <th className="w-[8%] px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+            <tr className="border-b border-slate-200 dark:border-slate-800">
+              <th className="w-[28%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Contact Name</th>
+              <th className="w-[26%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Email Address</th>
+              <th className="w-[20%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Linked Company</th>
+              <th className="w-[18%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Relationship Status</th>
+              <th className="w-[8%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
             {filteredContacts.length === 0 ? (
               <tr>
                 <td colSpan="5" className="px-6 py-12 text-center text-slate-400">No contacts found matching your criteria.</td>
@@ -221,32 +221,32 @@ export default function Contacts({ session, theme, toggleTheme }) {
               filteredContacts.map((contact) => (
                 <tr
                   key={contact.id}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group cursor-pointer"
+                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
                   onClick={() => router.push(`/contacts/${contact.id}`)}
                 >
-                  <td className="px-4 py-4">
+                  <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-900 dark:text-white font-bold">
                         {contact.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{contact.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Contact</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Contact</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 truncate">
-                    <a className="text-sm text-primary hover:underline font-medium truncate inline-block max-w-full" href={`mailto:${contact.email}`} target="_blank" rel="noopener noreferrer">
+                  <td className="px-5 py-4 truncate">
+                    <a className="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:underline transition-colors font-medium truncate inline-block max-w-full" href={`mailto:${contact.email}`} target="_blank" rel="noopener noreferrer">
                       {contact.email}
                     </a>
                   </td>
-                  <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300 font-medium truncate">
+                  <td className="px-5 py-4 text-sm text-slate-600 dark:text-slate-300 font-medium truncate">
                     {contact.companies?.name || 'Independent'}
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-5 py-4">
                     <StatusBadge status={contact.status} />
                   </td>
-                  <td className="px-4 py-4 text-right">
+                  <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Link
                         href={`/contacts/${contact.id}`}

@@ -310,20 +310,20 @@ export default function Dashboard({ session, theme, toggleTheme }) {
         {/* Welcome Section */}
         <section className="dashboard-welcome">
           <div className="dashboard-welcome-copy">
-             <h2 className="dashboard-greeting">Good afternoon, Sandra</h2>
-             <p className="dashboard-subtitle">Here&apos;s what&apos;s happening in your network today.</p>
+             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Good afternoon, Sandra</h2>
+             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Here&apos;s what&apos;s happening in your network today.</p>
           </div>
           <div className="dashboard-welcome-actions">
-             <div className="glass-panel dashboard-status-pill">
-                <span className="dashboard-status-dot"></span>
-                <span className="dashboard-status-label">System Operational</span>
+             <div className="glass-panel flex justify-center items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 rounded-full bg-slate-50 border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                <span>System Operational</span>
              </div>
-             <button type="button" className="btn-secondary dashboard-welcome-link" onClick={() => router.push('/calendar')}>
-               <span className="material-symbols-outlined">calendar_today</span>
+             <button type="button" className="btn-secondary" onClick={() => router.push('/calendar')}>
+               <span className="material-symbols-outlined text-lg">calendar_today</span>
                Open Calendar
              </button>
-             <button type="button" className="btn-secondary dashboard-welcome-link" onClick={() => router.push('/leads')}>
-               <span className="material-symbols-outlined">auto_awesome</span>
+             <button type="button" className="btn-secondary" onClick={() => router.push('/leads')}>
+               <span className="material-symbols-outlined text-lg">auto_awesome</span>
                Review Leads
              </button>
           </div>

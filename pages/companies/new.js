@@ -68,14 +68,14 @@ export default function NewCompany({ session, theme, toggleTheme }) {
   if (!session) return null
 
   return (
-      <div className="page-narrow ux-page-stack ux-fade-in">
-        <section className="card page-form form-hero">
-          <p className="form-hero-kicker">Companies</p>
-          <h1 className="form-hero-title">Create Company</h1>
-          <p className="form-hero-copy">Set up company profile and keyword monitoring so relevant news lands in the right account.</p>
-        </section>
+    <div className="page-wide page-stack ux-section-stagger">
+      <section className="glass-panel text-center">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Companies</p>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Create Company</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Set up company profile and keyword monitoring so relevant news lands in the right account.</p>
+      </section>
 
-        <form onSubmit={handleSubmit} className="card page-form page-stack">
+      <form onSubmit={handleSubmit} className="glass-panel space-y-6">
           {error && <p className="form-error">{error}</p>}
           <div className="split-2">
             <div>
@@ -110,20 +110,26 @@ export default function NewCompany({ session, theme, toggleTheme }) {
             />
           </div>
 
-          <div className="panel-soft panel-pad">
-            <p className="section-title section-title-gap">Keyword Presets</p>
-            <div className="stack-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
+            <p className="font-bold text-slate-900 dark:text-white mb-4">Keyword Presets</p>
+            <div className="space-y-3 max-h-[240px] overflow-y-auto px-2 custom-scrollbar">
               {Object.values(KEYWORD_PRESETS).map((preset) => (
-                <label key={preset.id} className="checklist-item">
-                  <input
-                    type="checkbox"
-                    checked={selectedPresetIds.includes(preset.id)}
-                    onChange={() => togglePreset(preset.id)}
-                  />
-                  <span>
-                    <span className="copy-strong">{preset.label}</span>
-                    <span className="small-copy muted force-block">{preset.keywords.join(', ')}</span>
-                  </span>
+                <label key={preset.id} className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative flex items-start mt-1">
+                    <input
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={selectedPresetIds.includes(preset.id)}
+                      onChange={() => togglePreset(preset.id)}
+                    />
+                    <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+                      {selectedPresetIds.includes(preset.id) && <span className="material-symbols-outlined text-[12px] text-white font-black">check</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">{preset.label}</span>
+                    <span className="block text-xs font-medium text-slate-500 mt-1">{preset.keywords.join(', ')}</span>
+                  </div>
                 </label>
               ))}
             </div>
@@ -151,9 +157,11 @@ export default function NewCompany({ session, theme, toggleTheme }) {
             </div>
           </details>
 
-          <button type="submit" disabled={loading} className="btn-primary btn-full">
-            {loading ? 'Saving...' : 'Create Company'}
-          </button>
+          <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+            <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
+              {loading ? 'Saving...' : 'Create Company'}
+            </button>
+          </div>
         </form>
       </div>
   )

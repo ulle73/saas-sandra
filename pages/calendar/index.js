@@ -376,7 +376,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                     type="button"
                     onClick={disconnectOutlook}
                     disabled={outlookActionLoading}
-                    className="btn btn-secondary text-xs"
+                    className="btn-secondary text-xs"
                   >
                     {outlookActionLoading ? 'Kopplar från...' : 'Koppla från Outlook'}
                   </button>
@@ -385,7 +385,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                     type="button"
                     onClick={connectOutlook}
                     disabled={outlookActionLoading}
-                    className="btn btn-primary text-xs"
+                    className="btn-primary text-xs"
                   >
                     {outlookActionLoading ? 'Startar...' : 'Anslut Outlook'}
                   </button>
@@ -394,7 +394,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                   type="button"
                   onClick={fetchOutlookEvents}
                   disabled={outlookLoading || outlookActionLoading}
-                  className="btn btn-secondary text-xs"
+                  className="btn-secondary text-xs"
                 >
                   {outlookLoading ? 'Synkar...' : 'Synka om'}
                 </button>
@@ -426,7 +426,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
              </div>
            </div>
 
-           <section className="dashboard-metric-strip">
+           <section className="dashboard-metric-strip my-6">
              {calendarSummaryCards.map((card) => (
                <article key={card.key} className="glass-panel dashboard-metric-card">
                  <p className="dashboard-metric-label">{card.label}</p>
@@ -436,7 +436,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
              ))}
            </section>
 
-           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden flex-1">
+           <div className="glass-panel overflow-hidden flex-1">
               <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                    <div key={day} className="py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{day}</div>

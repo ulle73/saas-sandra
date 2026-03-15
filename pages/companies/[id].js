@@ -181,13 +181,13 @@ export default function EditCompany({ session }) {
 
   return (
     <div className="page-wide page-stack ux-section-stagger">
-      <section className="card page-form form-hero">
-        <p className="form-hero-kicker">Companies</p>
-        <h1 className="form-hero-title">Edit Company</h1>
-        <p className="form-hero-copy">Refine account profile, status and keyword targeting to improve monitoring quality.</p>
+      <section className="glass-panel text-center">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Companies</p>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Edit Company</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Refine account profile, status and keyword targeting to improve monitoring quality.</p>
       </section>
 
-      <form onSubmit={handleSave} className="card page-form stack-lg">
+      <form onSubmit={handleSave} className="glass-panel space-y-6">
         <div className="between-row">
           <h2 className="section-title">Company Details</h2>
           <button type="button" className="btn-secondary" onClick={() => router.push('/companies')}>
@@ -231,20 +231,26 @@ export default function EditCompany({ session }) {
           </div>
         </div>
 
-        <div className="panel-soft panel-pad">
-          <p className="section-title section-title-gap">Keyword Presets</p>
-          <div className="stack-sm">
+        <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
+          <p className="font-bold text-slate-900 dark:text-white mb-4">Keyword Presets</p>
+          <div className="space-y-3 max-h-[240px] overflow-y-auto px-2 custom-scrollbar">
             {Object.values(KEYWORD_PRESETS).map((preset) => (
-              <label key={preset.id} className="checklist-item">
-                <input
-                  type="checkbox"
-                  checked={selectedPresetIds.includes(preset.id)}
-                  onChange={() => togglePreset(preset.id)}
-                />
-                <span>
-                  <span className="copy-strong">{preset.label}</span>
-                  <span className="small-copy muted force-block">{preset.keywords.join(', ')}</span>
-                </span>
+              <label key={preset.id} className="flex items-start gap-3 cursor-pointer group">
+                <div className="relative flex items-start mt-1">
+                  <input
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={selectedPresetIds.includes(preset.id)}
+                    onChange={() => togglePreset(preset.id)}
+                  />
+                  <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+                    {selectedPresetIds.includes(preset.id) && <span className="material-symbols-outlined text-[12px] text-white font-black">check</span>}
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">{preset.label}</span>
+                  <span className="block text-xs font-medium text-slate-500 mt-1">{preset.keywords.join(', ')}</span>
+                </div>
               </label>
             ))}
           </div>
@@ -271,8 +277,8 @@ export default function EditCompany({ session }) {
           </div>
         </details>
 
-        <div className="between-row top-gap-sm">
-          <button type="button" onClick={handleDelete} className="danger-link">
+        <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onClick={handleDelete} className="text-sm font-bold text-rose-500 hover:text-rose-600 transition-colors">
             Delete Company
           </button>
           <button type="submit" className="btn-primary" disabled={saving}>
@@ -281,7 +287,7 @@ export default function EditCompany({ session }) {
         </div>
       </form>
 
-      <section className="card page-form page-stack">
+      <section className="glass-panel">
         <div className="between-row wrap-row">
           <p className="section-title">Fetched Articles</p>
           <div className="action-row">

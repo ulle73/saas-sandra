@@ -67,14 +67,14 @@ export default function NewContact({ session, theme, toggleTheme }) {
 
   return (
       <div className="page-medium ux-page-stack ux-fade-in">
-        <section className="card page-form form-hero">
-          <p className="form-hero-kicker">Contacts</p>
-          <h1 className="form-hero-title">Create Contact</h1>
-          <p className="form-hero-copy">Add a clean profile and optionally link it to a company for better follow-up accuracy.</p>
+        <section className="glass-panel text-center">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contacts</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Create Contact</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Add a clean profile and optionally link it to a company for better follow-up accuracy.</p>
         </section>
 
-        <form onSubmit={handleSubmit} className="card page-form stack-lg">
-          {error && <p className="form-error">{error}</p>}
+        <form onSubmit={handleSubmit} className="glass-panel space-y-5">
+          {error && <p className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-500/10 p-3 rounded-lg border border-rose-100 dark:border-rose-500/20">{error}</p>}
           <div>
             <label className="form-label">Name</label>
             <input
@@ -125,13 +125,13 @@ export default function NewContact({ session, theme, toggleTheme }) {
               ))}
             </select>
             {!loadingCompanies && companies.length === 0 && (
-              <p className="tiny-copy muted top-gap-xs">No companies yet. Create one first if you want account-level tracking.</p>
+              <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">No companies yet. Create one first if you want account-level tracking.</p>
             )}
           </div>
-          <button type="submit" disabled={loading} className="btn-primary btn-full">
+          <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
             {loading ? 'Saving...' : 'Create Contact'}
           </button>
-          {loadingCompanies && <p className="small-copy muted">Loading companies...</p>}
+          {loadingCompanies && <p className="text-slate-400 text-xs text-center mt-2">Loading companies...</p>}
         </form>
       </div>
   )

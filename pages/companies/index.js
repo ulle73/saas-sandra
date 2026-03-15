@@ -197,12 +197,12 @@ export default function Companies({ session }) {
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-full min-h-0 ux-section-stagger">
       <div className="flex-1 flex flex-col gap-6 min-w-0">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Companies</h1>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Companies</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Enterprise News & Intelligence</p>
           </div>
-          <Link href="/companies/new" className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+          <Link href="/companies/new" className="btn-primary">
             <span className="material-symbols-outlined text-lg">add</span>
             Add Company
           </Link>
@@ -218,21 +218,21 @@ export default function Companies({ session }) {
           ))}
         </section>
 
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-[280px] relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+        <div className="glass-panel p-4 flex flex-wrap gap-4 items-center mb-2">
+          <div className="flex-1 min-w-[280px] relative group">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors">search</span>
             <input
               type="text"
               placeholder="Search companies, industries..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 outline-none"
+              className="input-field pl-10"
             />
           </div>
           <select
             value={filterIndustry}
             onChange={(e) => setFilterIndustry(e.target.value)}
-            className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 outline-none cursor-pointer"
+            className="input-field w-auto min-w-[200px]"
           >
             {industries.map((industry) => <option key={industry} value={industry}>{industry}</option>)}
           </select>
@@ -240,17 +240,17 @@ export default function Companies({ session }) {
 
         {error && <p className="form-error">{error}</p>}
 
-        <div className="bg-white dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-hidden custom-scrollbar">
+        <div className="glass-panel overflow-hidden overflow-x-hidden custom-scrollbar">
           <table className="w-full table-fixed text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                <th className="w-[34%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Name</th>
-                <th className="w-[23%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Industry</th>
-                <th className="w-[23%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Website</th>
-                <th className="w-[20%] px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+              <tr className="border-b border-slate-200 dark:border-slate-800">
+                <th className="w-[34%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Company Name</th>
+                <th className="w-[23%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Industry</th>
+                <th className="w-[23%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Website</th>
+                <th className="w-[20%] px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
               {filteredCompanies.map((company) => {
                 const companyUrl = normalizeWebUrl(company.website)
                 return (

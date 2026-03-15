@@ -16,7 +16,7 @@ export default function StatusBadge({ status }) {
       label: 'Stale (>4 weeks)'
     },
     default: {
-      bg: 'bg-slate-50 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400',
+      bg: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
       dot: 'bg-slate-500',
       label: 'Unknown'
     }

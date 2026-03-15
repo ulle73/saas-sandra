@@ -171,16 +171,16 @@ export default function AiProfileSettings({ session }) {
   if (!session) return null
 
   return (
-    <div className="page-medium ux-page-stack ux-fade-in">
-      <section className="card page-form form-hero">
-        <p className="form-hero-kicker">AI Settings</p>
-        <h1 className="form-hero-title">AI Lead Profile</h1>
-        <p className="form-hero-copy">
+    <div className="page-wide page-stack ux-section-stagger">
+      <section className="glass-panel text-center">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">AI Settings</p>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">AI Lead Profile</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
           Styr hur lead-motorn prioriterar bolag och formulerar resonemang for just den har kunden.
         </p>
       </section>
 
-      <form className="card page-form stack-lg" onSubmit={handleSubmit}>
+      <form className="glass-panel space-y-6" onSubmit={handleSubmit}>
         {loading ? <p className="small-copy muted">Loading profile...</p> : null}
         {error ? <p className="form-error">{error}</p> : null}
         {info ? <p className="form-info">{info}</p> : null}
@@ -210,12 +210,12 @@ export default function AiProfileSettings({ session }) {
         </div>
       </form>
 
-      <section className="card page-form stack-sm">
-        <h2 className="section-title">Prompt Preview</h2>
-        <p className="small-copy muted">
+      <section className="glass-panel">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-2">Prompt Preview</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
           Denna text injiceras i lead-generatorn tillsammans med basreglerna.
         </p>
-        <pre className="input-field small-copy" style={{ minHeight: '220px', whiteSpace: 'pre-wrap' }}>
+        <pre className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-600 dark:text-slate-300 font-mono overflow-auto" style={{ minHeight: '220px', whiteSpace: 'pre-wrap' }}>
           {promptPreview}
         </pre>
       </section>

@@ -421,9 +421,9 @@ export default function AILeads({ session }) {
   return (
     <div className="flex flex-col lg:flex-row min-h-0 lg:h-[calc(100vh-80px)] ux-section-stagger">
       <div className="flex-1 flex flex-col gap-6 min-w-0 p-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">AI Sales Copilot</h1>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">AI Sales Copilot</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">New Potential Opportunities</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -431,7 +431,7 @@ export default function AILeads({ session }) {
               type="button"
               onClick={handleGenerateLeads}
               disabled={generationLoading}
-              className="px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-60"
+              className="btn-primary"
             >
               {generationLoading ? 'Generating...' : 'Generate New Leads'}
             </button>
@@ -441,10 +441,10 @@ export default function AILeads({ session }) {
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all capitalize ${
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all capitalize ${
                     statusFilter === status
-                      ? 'bg-white dark:bg-slate-700 shadow-sm text-primary'
-                      : 'text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-white'
+                      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
                 >
                   {formatStatusLabel(status)} ({statusCounts[status] || 0})
@@ -464,33 +464,35 @@ export default function AILeads({ session }) {
           ))}
         </section>
 
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-          <input
-            type="text"
-            placeholder="Search leads by company, signal, reason..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
-          />
+        <div className="glass-panel p-4 flex flex-wrap gap-4 items-center mb-2">
+          <div className="flex-1 min-w-[280px] relative group">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors">search</span>
+            <input
+              type="text"
+              placeholder="Search leads by company, signal, reason..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10"
+            />
+          </div>
         </div>
 
         {error && <p className="form-error">{error}</p>}
         {generationError ? <p className="form-error">{generationError}</p> : null}
         {generationInfo ? <p className="form-info">{generationInfo}</p> : null}
 
-        <div className="bg-white dark:bg-slate-950/80 flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <div className="glass-panel flex-1 min-h-[300px] overflow-y-auto overflow-x-hidden custom-scrollbar">
           <table className="w-full table-fixed text-left border-collapse">
-            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10">
-              <tr>
-                <th className="w-[34%] py-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Company</th>
-                <th className="w-[20%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Match Score</th>
-                <th className="w-[14%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</th>
-                <th className="w-[18%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Growth Signal</th>
-                <th className="w-[14%] py-4 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Created</th>
+            <thead className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-10">
+              <tr className="border-b border-slate-200 dark:border-slate-800">
+                <th className="w-[34%] py-4 px-5 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Company</th>
+                <th className="w-[20%] py-4 px-3 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Match Score</th>
+                <th className="w-[14%] py-4 px-3 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Priority</th>
+                <th className="w-[18%] py-4 px-3 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Growth Signal</th>
+                <th className="w-[14%] py-4 px-3 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Created</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
               {filteredItems.map((item) => (
                 <tr
                   key={item.id}
