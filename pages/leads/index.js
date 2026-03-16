@@ -571,23 +571,33 @@ export default function AILeads({ session }) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {selectedLinkedInCompanyUrl ? (
-                  <a href={selectedLinkedInCompanyUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
-                    Open LinkedIn company
-                  </a>
-                ) : null}
-                {selectedLinkedInPeopleHrUrl ? (
-                  <a href={selectedLinkedInPeopleHrUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
-                    Open LinkedIn HR search
-                  </a>
-                ) : null}
-                {selectedSourceUrl ? (
-                  <a href={selectedSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
+                <div className="flex flex-wrap gap-2">
+                  {selectedLinkedInCompanyUrl && (
+                    <a href={selectedLinkedInCompanyUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                      Company
+                    </a>
+                  )}
+                  {selectedLead.linkedin_jobs_url && (
+                    <a href={selectedLead.linkedin_jobs_url} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                      Jobs
+                    </a>
+                  )}
+                  {selectedLead.linkedin_people_url && (
+                    <a href={selectedLead.linkedin_people_url} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                      LinkedIn People
+                    </a>
+                  )}
+                  {selectedLead.linkedin_about_url && (
+                    <a href={selectedLead.linkedin_about_url} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                      About
+                    </a>
+                  )}
+                </div>
+                {selectedSourceUrl && (
+                  <a href={selectedSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy mt-2">
                     Open source article
                   </a>
-                ) : null}
-              </div>
+                )}
             </div>
 
             <div className="p-8 grow overflow-y-auto space-y-6 dashboard-subsurface">
@@ -626,6 +636,15 @@ export default function AILeads({ session }) {
                   <p className="small-copy muted">No candidate profile available for this lead yet.</p>
                 )}
               </div>
+
+              {selectedLead.linkedin_about_text && (
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Description</h4>
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-4">
+                    {selectedLead.linkedin_about_text}
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signal Evidence</h4>

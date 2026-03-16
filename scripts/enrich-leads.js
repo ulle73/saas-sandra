@@ -40,10 +40,11 @@ async function main() {
 
   console.log(`Total leads in DB for user ${LEADS_USER_ID}: ${leads.length}`)
 
-  // Filter for leads that REALLY need enrichment (missing contacts OR missing LinkedIn ID)
+  // Filter for leads that REALLY need enrichment (missing contacts OR missing LinkedIn ID OR missing LinkedIn About Text)
   const toEnrich = leads.filter(l => {
     const contacts = Array.isArray(l.contact_candidates) ? l.contact_candidates : JSON.parse(l.contact_candidates || '[]')
     const needsEnrichment = contacts.length === 0 || !l.linkedin_company_id
+
     if (!needsEnrichment) {
       console.log(`- Skipping ${l.company_name}: already has ${contacts.length} contacts and LinkedIn ID ${l.linkedin_company_id}`)
     }

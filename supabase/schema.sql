@@ -194,6 +194,18 @@ alter table public.lead_discovery_items
 alter table public.lead_discovery_items
   add column if not exists linkedin_people_search_ceo_url text;
 
+alter table public.lead_discovery_items
+  add column if not exists linkedin_jobs_url text;
+
+alter table public.lead_discovery_items
+  add column if not exists linkedin_people_url text;
+
+alter table public.lead_discovery_items
+  add column if not exists linkedin_about_url text;
+
+alter table public.lead_discovery_items
+  add column if not exists linkedin_about_text text;
+
 alter table public.user_outlook_connections
   add column if not exists microsoft_user_id text;
 
