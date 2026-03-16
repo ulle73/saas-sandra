@@ -2,11 +2,10 @@ import nextEnv from '@next/env'
 
 const { loadEnvConfig } = nextEnv
 
-let loaded = false
+loadEnvConfig(process.cwd())
+
+let loaded = true
 
 export function ensureEnvLoaded() {
-  if (!loaded) {
-    loadEnvConfig(process.cwd())
-    loaded = true
-  }
+  // Already loaded on import
 }

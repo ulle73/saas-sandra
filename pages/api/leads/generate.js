@@ -35,7 +35,7 @@ function appendLogTail(currentValue, chunk) {
 }
 
 function parseInsertedCount(logText) {
-  const match = /New discovery leads inserted:\s*(\d+)/i.exec(String(logText || ''))
+  const match = /New\s*discovery\s*leads\s*inserted:\s*(\d+)/i.exec(String(logText || ''))
   if (!match) return null
   const value = Number.parseInt(match[1], 10)
   return Number.isFinite(value) ? value : null
