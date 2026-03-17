@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
+import { Search, Sun, Moon, LogOut, User } from 'lucide-react'
 
 const SEARCH_CONFIG = {
   '/calendar': {
@@ -98,7 +99,7 @@ export default function Header({ user, onToggleTheme, theme, onSignOut }) {
         </div>
 
         <div className={`app-topbar-search ${isSearchEnabled ? '' : 'is-disabled'}`}>
-          <span className="material-symbols-outlined app-topbar-search-icon">search</span>
+          <Search size={18} className="app-topbar-search-icon" />
           <input
             ref={searchInputRef}
             className="app-topbar-search-input"
@@ -119,13 +120,11 @@ export default function Header({ user, onToggleTheme, theme, onSignOut }) {
           title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           type="button"
         >
-          <span className="material-symbols-outlined">
-            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-          </span>
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
         <button onClick={onSignOut} className="app-topbar-icon-btn" title="Sign out" type="button">
-          <span className="material-symbols-outlined">logout</span>
+          <LogOut size={20} />
         </button>
 
         <div className="app-topbar-user">
@@ -137,7 +136,7 @@ export default function Header({ user, onToggleTheme, theme, onSignOut }) {
             {user?.user_metadata?.avatar_url ? (
               <img src={user.user_metadata.avatar_url} alt="Profile" className="app-topbar-user-avatar-image" />
             ) : (
-              <span className="material-symbols-outlined">person</span>
+              <User size={20} />
             )}
           </div>
         </div>

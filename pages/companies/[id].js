@@ -8,6 +8,7 @@ import {
   buildGoogleAlertsQuery,
   buildGoogleNewsTestUrl,
 } from '../../lib/newsKeywords'
+import { Check } from 'lucide-react'
 
 const COMPANY_STATUSES = [
   { value: 'active', label: 'Active' },
@@ -244,7 +245,7 @@ export default function EditCompany({ session }) {
                     onChange={() => togglePreset(preset.id)}
                   />
                   <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
-                    {selectedPresetIds.includes(preset.id) && <span className="material-symbols-outlined text-[12px] text-white font-black">check</span>}
+                    {selectedPresetIds.includes(preset.id) && <Check size={12} className="text-white font-black" />}
                   </div>
                 </div>
                 <div>

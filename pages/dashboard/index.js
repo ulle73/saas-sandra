@@ -5,6 +5,7 @@ import { BentoGrid, BentoItem } from '../../components/BentoGrid'
 import KPICard from '../../components/KPICard'
 import { computeContactStatus } from '../../lib/contactStatus'
 import { buildOutlookSyncPlan } from '../../lib/outlookSync'
+import { Calendar, Sparkles, Users, CheckCircle, AlertTriangle, AlertOctagon, Mail, Phone, Bot } from 'lucide-react'
 
 export default function Dashboard({ session, theme, toggleTheme }) {
   const router = useRouter()
@@ -319,11 +320,11 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                 <span>System Operational</span>
              </div>
              <button type="button" className="btn-secondary" onClick={() => router.push('/calendar')}>
-               <span className="material-symbols-outlined text-lg">calendar_today</span>
+               <Calendar size={18} />
                Open Calendar
              </button>
              <button type="button" className="btn-secondary" onClick={() => router.push('/leads')}>
-               <span className="material-symbols-outlined text-lg">auto_awesome</span>
+               <Sparkles size={18} />
                Review Leads
              </button>
           </div>
@@ -359,7 +360,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
              <KPICard 
                title="Total Contacts" 
                value={stats.total} 
-               icon="group" 
+               icon={Users} 
                color="primary"
                trend="up" 
                trendValue="+12% vs last month"
@@ -370,7 +371,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
              <KPICard 
                title="Active Leads" 
                value={stats.green} 
-               icon="verified" 
+               icon={CheckCircle} 
                color="success" 
                trend="up" 
                trendValue="Healthy engagement"
@@ -381,7 +382,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
              <KPICard 
                title="Attention Needed" 
                value={stats.yellow} 
-               icon="warning" 
+               icon={AlertTriangle} 
                color="warning" 
                trend="down" 
                trendValue="Action required"
@@ -392,7 +393,7 @@ export default function Dashboard({ session, theme, toggleTheme }) {
              <KPICard 
                title="Critical" 
                value={stats.red} 
-               icon="error" 
+               icon={AlertOctagon} 
                color="danger" 
                trend="down" 
                trendValue="Immediate review"
@@ -499,9 +500,9 @@ export default function Dashboard({ session, theme, toggleTheme }) {
                   filteredRecentActivity.map((activity) => (
                     <div key={activity.id} className="dashboard-activity-item">
                        <div className="dashboard-activity-icon-wrap">
-                          <span className="material-symbols-outlined dashboard-activity-icon">
-                            {activity.type === 'email' ? 'mail' : activity.type === 'call' ? 'call' : 'event'}
-                          </span>
+                          {activity.type === 'email' ? <Mail size={16} className="text-slate-600 dark:text-slate-400" /> : 
+                           activity.type === 'call' ? <Phone size={16} className="text-slate-600 dark:text-slate-400" /> : 
+                           <Calendar size={16} className="text-slate-600 dark:text-slate-400" />}
                        </div>
                        <div>
                           <p className="dashboard-activity-name">

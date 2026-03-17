@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import { Search, ExternalLink, Check, X, UserSearch, Verified, Briefcase, CheckCircle, Sparkles, Quote, Archive } from 'lucide-react'
 
 function normalizeWebUrl(value) {
   const raw = String(value || '').trim()
@@ -436,12 +437,12 @@ export default function AILeads({ session }) {
               {generationLoading ? 'Generating...' : 'Generate New Leads'}
             </button>
 
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-md">
               {['new', 'accepted', 'rejected', 'converted'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all capitalize ${
+                  className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all capitalize ${
                     statusFilter === status
                       ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
@@ -466,7 +467,7 @@ export default function AILeads({ session }) {
 
         <div className="glass-panel p-4 flex flex-wrap gap-4 items-center mb-2">
           <div className="flex-1 min-w-[280px] relative group">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors">search</span>
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors" />
             <input
               type="text"
               placeholder="Search leads by company, signal, reason..."
@@ -499,13 +500,13 @@ export default function AILeads({ session }) {
                   onClick={() => setSelectedLead(item)}
                   className={`group cursor-pointer transition-all ${
                     selectedLead?.id === item.id
-                      ? 'bg-primary/8 dark:bg-primary/25 shadow-[inset_0_0_0_1px_rgba(94,177,255,0.5)]'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'
+                      ? 'bg-slate-50 dark:bg-slate-800/80 shadow-[inset_3px_0_0_0_#2563EB]'
+                      : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/40'
                   }`}
                 >
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs">
+                      <div className="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center font-black text-xs">
                         {item.company_name.substring(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
@@ -516,16 +517,16 @@ export default function AILeads({ session }) {
                   </td>
                   <td className="py-4 px-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="w-14 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-sm overflow-hidden">
                         <div className={`${item.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'} h-full`} style={{ width: `${item.score}%` }}></div>
                       </div>
                       <span className={`text-xs font-black ${item.score >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>{item.score}%</span>
                     </div>
                   </td>
                   <td className="py-4 px-3">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                    <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-widest border ${
                       item.score >= 80
-                        ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-800/50'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-800/50'
                         : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-800/50'
                     }`}>
                       {item.score >= 80 ? 'High' : 'Medium'}
@@ -552,7 +553,7 @@ export default function AILeads({ session }) {
         <aside className="w-full lg:w-[450px] flex flex-col bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 h-full overflow-hidden">
             <div className="p-8 border-b border-slate-50 dark:border-slate-800">
               <div className="flex items-start gap-4 mb-6">
-                <div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center text-2xl font-black shadow-xl shadow-primary/20">
+                <div className="size-14 rounded-md bg-primary text-white flex items-center justify-center text-2xl font-black shadow-sm">
                   {selectedLead.company_name.substring(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -565,7 +566,7 @@ export default function AILeads({ session }) {
                       className="text-primary text-xs font-bold hover:underline flex items-center gap-1 mt-1 break-all"
                     >
                       {selectedLead.company_domain}
-                      <span className="material-symbols-outlined text-xs">open_in_new</span>
+                      <ExternalLink size={14} className="ml-1" />
                     </a>
                   ) : null}
                 </div>
@@ -573,28 +574,28 @@ export default function AILeads({ session }) {
 
                 <div className="flex flex-wrap gap-2">
                   {selectedLinkedInCompanyUrl && (
-                    <a href={selectedLinkedInCompanyUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                    <a href={selectedLinkedInCompanyUrl} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
                       Company
                     </a>
                   )}
                   {selectedLead.linkedin_jobs_url && (
-                    <a href={selectedLead.linkedin_jobs_url} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                    <a href={selectedLead.linkedin_jobs_url} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
                       Jobs
                     </a>
                   )}
                   {selectedLead.linkedin_people_url && (
-                    <a href={selectedLead.linkedin_people_url} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                    <a href={selectedLead.linkedin_people_url} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
                       LinkedIn People
                     </a>
                   )}
                   {selectedLead.linkedin_about_url && (
-                    <a href={selectedLead.linkedin_about_url} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 !px-3 !text-[10px] font-bold uppercase tracking-wider">
+                    <a href={selectedLead.linkedin_about_url} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
                       About
                     </a>
                   )}
                 </div>
                 {selectedSourceUrl && (
-                  <a href={selectedSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy mt-2">
+                  <a href={selectedSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy mt-3 font-semibold text-slate-500">
                     Open source article
                   </a>
                 )}
@@ -602,25 +603,25 @@ export default function AILeads({ session }) {
 
             <div className="p-8 grow overflow-y-auto space-y-6 dashboard-subsurface">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div className="p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Target Title</p>
                   <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <span className="material-symbols-outlined text-sm">person_search</span>
+                    <UserSearch size={16} />
                     {selectedLead.recommended_person_title || selectedPrimaryCandidate?.title || 'Not detected'}
                   </div>
                 </div>
-                <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div className="p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Match Confidence</p>
                   <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
-                    <span className="material-symbols-outlined text-sm">verified</span>
+                    <Verified size={16} />
                     {selectedLead.score >= 80 ? 'Ultra High' : 'Strong'}
                   </div>
                 </div>
                 {selectedLead.linkedin_job_count !== null && (
-                  <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2">
+                  <div className="p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 col-span-2">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Active LinkedIn Jobs</p>
                     <div className="flex items-center gap-2 text-primary font-black text-sm">
-                      <span className="material-symbols-outlined text-sm">work</span>
+                      <Briefcase size={16} />
                       {selectedLead.linkedin_job_count} open positions
                     </div>
                   </div>
@@ -657,19 +658,19 @@ export default function AILeads({ session }) {
 
               <div className="space-y-2">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signal Evidence</h4>
-                <div className="flex gap-3 text-xs font-medium text-slate-600 dark:text-slate-400">
-                  <span className="material-symbols-outlined text-emerald-500 text-sm">check_circle</span>
+                <div className="flex gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                  <CheckCircle size={14} className="text-emerald-500 shrink-0 mt-[1px]" />
                   <span>{selectedLead.reason}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <h4 className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest">
-                  <span className="material-symbols-outlined text-base">auto_awesome</span>
+                <h4 className="flex items-center gap-1.5 text-[10px] font-black text-slate-900 uppercase tracking-widest">
+                  <Sparkles size={14} />
                   AI Pitch Vector
                 </h4>
-                <div className="p-5 bg-primary/[0.03] dark:bg-primary/10 rounded-2xl border border-primary/20 relative">
-                  <span className="material-symbols-outlined absolute top-2 right-4 opacity-10 text-4xl">format_quote</span>
+                <div className="p-5 bg-white rounded-md border border-slate-200 relative">
+                  <Quote size={40} className="absolute top-3 right-4 opacity-10" />
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed italic">
                     {selectedLead.pitch || 'No AI pitch available'}
                   </p>
@@ -677,31 +678,34 @@ export default function AILeads({ session }) {
               </div>
             </div>
 
-            <div className="p-8 border-t border-slate-100 dark:border-slate-800 space-y-3">
-              {actionError ? <p className="form-error">{actionError}</p> : null}
-              {actionInfo ? <p className="form-info">{actionInfo}</p> : null}
+            <div className="p-8 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center gap-4">
+              {actionError ? <p className="form-error w-full text-center">{actionError}</p> : null}
+              {actionInfo ? <p className="form-info w-full text-center">{actionInfo}</p> : null}
 
               <button
-                className="w-full py-4 bg-primary text-white font-black rounded-xl shadow-xl shadow-primary/20 hover:bg-primary/90 flex items-center justify-center gap-3 transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="flex items-center justify-center gap-2 text-slate-800 font-medium hover:text-primary transition-colors disabled:opacity-50"
                 onClick={handleConvert}
                 disabled={Boolean(actionLoading)}
               >
-                <span className="material-symbols-outlined">add_business</span>
+                <Check size={18} strokeWidth={2.5} />
                 {actionLoading === 'convert' ? 'Converting...' : 'Accept & Create Account'}
               </button>
-              <div className="flex gap-3">
+              
+              <div className="flex items-center justify-center gap-12 w-full mt-2">
                 <button
-                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-60"
+                  className="flex items-center justify-center gap-2 text-slate-800 font-medium hover:text-slate-500 transition-colors disabled:opacity-50"
                   onClick={handleArchive}
                   disabled={Boolean(actionLoading)}
                 >
+                  <Archive size={16} strokeWidth={2} />
                   {actionLoading === 'archive' ? 'Archiving...' : 'Archive'}
                 </button>
                 <button
-                  className="flex-1 py-3 border border-rose-100 dark:border-rose-900/40 text-rose-500 dark:text-rose-300 font-bold rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors disabled:opacity-60"
+                  className="flex items-center justify-center gap-2 text-slate-800 font-medium hover:text-rose-500 transition-colors disabled:opacity-50"
                   onClick={handleReject}
                   disabled={Boolean(actionLoading)}
                 >
+                  <X size={16} strokeWidth={2.5} />
                   {actionLoading === 'reject' ? 'Rejecting...' : 'Reject'}
                 </button>
               </div>

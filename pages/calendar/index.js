@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import { Video, MapPin, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function CalendarPage({ session, theme, toggleTheme }) {
   const router = useRouter()
@@ -328,7 +329,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                              </p>
                              <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{timeLabel}</p>
                              <div className="flex items-center gap-1 mt-1 text-slate-400">
-                                <span className="material-symbols-outlined text-[14px]">{event.isOnlineMeeting ? 'videocam' : 'location_on'}</span>
+                                {event.isOnlineMeeting ? <Video size={14} /> : <MapPin size={14} />}
                                 <span className="text-[10px] font-medium">{event.location || 'Remote Meeting'}</span>
                              </div>
                           </div>
@@ -411,7 +412,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                   className="p-2 text-slate-400 hover:text-primary transition-colors"
                   aria-label="Previous month"
                 >
-                   <span className="material-symbols-outlined">chevron_left</span>
+                   <ChevronLeft size={24} />
                 </button>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight min-w-[220px] text-center">
                    {currentDate.toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })}
@@ -421,7 +422,7 @@ export default function CalendarPage({ session, theme, toggleTheme }) {
                   className="p-2 text-slate-400 hover:text-primary transition-colors"
                   aria-label="Next month"
                 >
-                   <span className="material-symbols-outlined">chevron_right</span>
+                   <ChevronRight size={24} />
                 </button>
              </div>
            </div>

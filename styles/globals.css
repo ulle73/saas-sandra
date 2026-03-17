@@ -2382,10 +2382,22 @@ textarea.input-field {
 }
 
 .shell-sidebar-link.is-active {
-  color: #FFFFFF;
-  background: #1E293B;
+  color: #3b82f6; /* bright blue */
+  background: #172033; /* dark blue/slate */
   border-color: transparent;
   font-weight: 600;
+  position: relative;
+}
+
+.shell-sidebar-link.is-active::before {
+  content: '';
+  position: absolute;
+  left: -0.72rem; /* offset by nav padding */
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: #3B82F6;
+  border-radius: 0 4px 4px 0;
 }
 
 .shell-sidebar-link-icon {
@@ -2414,7 +2426,7 @@ textarea.input-field {
   margin-left: auto;
   border-radius: var(--radius-sm);
   padding: 0.16rem 0.48rem;
-  background: #2563EB;
+  background: #3B82F6;
   color: #FFFFFF;
   text-transform: uppercase;
   letter-spacing: 0.07em;

@@ -17,7 +17,6 @@ export default function AppShell({ children, session, theme, toggleTheme, title 
     <div className={`app-shell-root min-h-screen ${theme === 'dark' ? 'dark' : ''}`}>
       <Head>
         <title>{title ? `${title} | CRM Admin` : 'CRM Admin'}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </Head>
 
       <div className="app-shell-layout">
@@ -40,13 +39,6 @@ export default function AppShell({ children, session, theme, toggleTheme, title 
           <MobileTabBar />
         </main>
       </div>
-
-      <style jsx global>{`
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-          vertical-align: middle;
-        }
-      `}</style>
     </div>
   )
 }

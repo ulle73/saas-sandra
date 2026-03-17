@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
+import { Plus, Search, ExternalLink, Building2, Rss } from 'lucide-react'
 
 const COMPANY_STATUSES = [
   { value: 'active', label: 'Active' },
@@ -203,7 +204,7 @@ export default function Companies({ session }) {
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Enterprise News & Intelligence</p>
           </div>
           <Link href="/companies/new" className="btn-primary">
-            <span className="material-symbols-outlined text-lg">add</span>
+            <Plus size={18} />
             Add Company
           </Link>
         </div>
@@ -220,7 +221,7 @@ export default function Companies({ session }) {
 
         <div className="glass-panel p-4 flex flex-wrap gap-4 items-center mb-2">
           <div className="flex-1 min-w-[280px] relative group">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors">search</span>
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors" />
             <input
               type="text"
               placeholder="Search companies, industries..."
@@ -282,7 +283,7 @@ export default function Companies({ session }) {
                           className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
                         >
                           {company.website?.replace(/^https?:\/\//i, '')}
-                          <span className="material-symbols-outlined text-xs">open_in_new</span>
+                          <ExternalLink size={14} />
                         </a>
                       ) : (
                         <span className="text-xs text-slate-400">N/A</span>
@@ -347,7 +348,7 @@ export default function Companies({ session }) {
             <div className="p-8 news-surface">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <span className="material-symbols-outlined text-base">rss_feed</span>
+                  <Rss size={16} />
                   News Monitoring
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest">

@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { LayoutDashboard, Users, Building2, Sparkles, Calendar, SlidersHorizontal, Rocket, CheckCircle } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { label: 'Overview', icon: 'dashboard', href: '/dashboard', match: ['/dashboard'] },
-  { label: 'Contacts', icon: 'person', href: '/contacts', match: ['/contacts'] },
-  { label: 'Companies', icon: 'corporate_fare', href: '/companies', match: ['/companies'] },
-  { label: 'AI Leads', icon: 'auto_awesome', href: '/leads', match: ['/leads'], badge: 'New' },
-  { label: 'Calendar', icon: 'calendar_today', href: '/calendar', match: ['/calendar'] },
-  { label: 'AI Profile', icon: 'tune', href: '/settings/ai-profile', match: ['/settings/ai-profile'] },
+  { label: 'Overview', icon: LayoutDashboard, href: '/dashboard', match: ['/dashboard'] },
+  { label: 'Contacts', icon: Users, href: '/contacts', match: ['/contacts'] },
+  { label: 'Companies', icon: Building2, href: '/companies', match: ['/companies'] },
+  { label: 'AI Leads', icon: Sparkles, href: '/leads', match: ['/leads'], badge: 'New' },
+  { label: 'Calendar', icon: Calendar, href: '/calendar', match: ['/calendar'] },
+  { label: 'AI Profile', icon: SlidersHorizontal, href: '/settings/ai-profile', match: ['/settings/ai-profile'] },
 ]
 
 function isItemActive(pathname, item) {
@@ -21,7 +22,7 @@ export default function Sidebar() {
     <aside className="shell-sidebar" aria-label="Primary navigation">
       <div className="shell-sidebar-brand">
         <div className="shell-sidebar-brand-mark">
-          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>rocket_launch</span>
+          <Rocket size={20} strokeWidth={2.5} />
         </div>
         <div className="shell-sidebar-brand-copy">
           <h1 className="shell-sidebar-title">Induction</h1>
@@ -40,7 +41,7 @@ export default function Sidebar() {
               className={`shell-sidebar-link ${isActive ? 'is-active' : ''}`}
               style={{ '--ux-index': index }}
             >
-              <span className="shell-sidebar-link-icon material-symbols-outlined">{item.icon}</span>
+              <span className="shell-sidebar-link-icon"><item.icon size={18} strokeWidth={isActive ? 2.5 : 2} /></span>
               <span className="shell-sidebar-link-label">{item.label}</span>
               {item.badge ? <span className="shell-sidebar-link-badge">{item.badge}</span> : null}
             </Link>
@@ -55,7 +56,7 @@ export default function Sidebar() {
         </div>
         <p className="shell-sidebar-footer-copy">72% active pipeline coverage</p>
         <div className="shell-sidebar-footer-chip">
-          <span className="material-symbols-outlined">verified</span>
+          <CheckCircle size={14} strokeWidth={2.5} />
           <span>System operational</span>
         </div>
       </div>

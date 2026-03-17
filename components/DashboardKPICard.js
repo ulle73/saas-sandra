@@ -1,4 +1,6 @@
-export default function DashboardKPICard({ title, value, icon, trend, trendValue, color = 'primary' }) {
+import { TrendingUp, TrendingDown } from 'lucide-react'
+
+export default function DashboardKPICard({ title, value, icon: Icon, trend, trendValue, color = 'primary' }) {
   const colorMap = {
     primary: 'bg-blue-50 text-primary',
     success: 'bg-emerald-50 text-emerald-500',

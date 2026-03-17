@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
 import StatusBadge from '../../components/StatusBadge'
 import { computeContactStatus } from '../../lib/contactStatus'
+import { Download, Plus, Search, Filter, ChevronDown, Pen, Trash2 } from 'lucide-react'
 
 export default function Contacts({ session, theme, toggleTheme }) {
   const router = useRouter()
@@ -154,11 +155,11 @@ export default function Contacts({ session, theme, toggleTheme }) {
         </div>
         <div className="flex items-center gap-3">
           <button onClick={handleExport} className="btn-secondary">
-            <span className="material-symbols-outlined text-lg">file_download</span>
+            <Download size={18} />
             Export
           </button>
           <Link href="/contacts/new" className="btn-primary">
-            <span className="material-symbols-outlined text-lg">add</span>
+            <Plus size={18} />
             Add Contact
           </Link>
         </div>
@@ -177,7 +178,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
       {/* Filters Area */}
       <div className="glass-panel p-4 mb-6 flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[300px] relative group">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors">search</span>
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors" />
           <input
             type="text"
             placeholder="Search by name, email, or company..."
@@ -186,16 +187,21 @@ export default function Contacts({ session, theme, toggleTheme }) {
             className="input-field pl-10"
           />
         </div>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="input-field w-auto min-w-[160px]"
-        >
-          <option value="all">All Statuses</option>
-          <option value="green">Upcoming Activity</option>
-          <option value="yellow">Recent Contact</option>
-          <option value="red">Stale (&gt;4 weeks)</option>
-        </select>
+        <div className="relative group">
+          <Filter size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="input-field w-auto min-w-[150px] pl-9 pr-8 appearance-none cursor-pointer bg-white text-slate-700 font-bold hover:bg-slate-50 transition-colors"
+          >
+            <option value="all">Filter</option>
+            <option value="all">— All Statuses —</option>
+            <option value="green">Upcoming Activity</option>
+            <option value="yellow">Recent Contact</option>
+            <option value="red">Stale (&gt;4 weeks)</option>
+          </select>
+          <ChevronDown size={18} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        </div>
       </div>
 
       {error && <p className="p-4 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 mb-6">{error}</p>}
@@ -253,7 +259,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
                         onClick={(event) => event.stopPropagation()}
                         className="p-2 text-slate-400 hover:text-primary transition-colors"
                       >
-                        <span className="material-symbols-outlined text-lg">edit</span>
+                        <Pen size={18} />
                       </Link>
                       <button
                         onClick={(event) => {
@@ -263,7 +269,7 @@ export default function Contacts({ session, theme, toggleTheme }) {
                         className="p-2 text-slate-400 hover:text-rose-500 transition-colors disabled:opacity-60"
                         disabled={deleteLoadingId === contact.id}
                       >
-                        <span className="material-symbols-outlined text-lg">delete</span>
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>
