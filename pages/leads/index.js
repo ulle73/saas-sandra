@@ -616,6 +616,15 @@ export default function AILeads({ session }) {
                     {selectedLead.score >= 80 ? 'Ultra High' : 'Strong'}
                   </div>
                 </div>
+                {selectedLead.linkedin_job_count !== null && (
+                  <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Active LinkedIn Jobs</p>
+                    <div className="flex items-center gap-2 text-primary font-black text-sm">
+                      <span className="material-symbols-outlined text-sm">work</span>
+                      {selectedLead.linkedin_job_count} open positions
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -640,7 +649,7 @@ export default function AILeads({ session }) {
               {selectedLead.linkedin_about_text && (
                 <div className="space-y-2">
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Description</h4>
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-4">
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                     {selectedLead.linkedin_about_text}
                   </p>
                 </div>

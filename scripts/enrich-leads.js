@@ -13,6 +13,8 @@ import {
   ensureDiscoverySchema,
   runCompanyPeopleFlow,
 } from '../lib/leads/persistence.js'
+import { isSwedishPersonCandidate } from '../lib/leads/company.js'
+import { STRICT_SWEDEN_ONLY } from '../lib/leads/config.js'
 import { supabaseAdmin } from '../lib/supabase.js'
 
 ensureEnvLoaded()
@@ -43,10 +45,18 @@ async function main() {
   // Filter for leads that REALLY need enrichment (missing contacts OR missing LinkedIn ID OR missing LinkedIn About Text)
   const toEnrich = leads.filter(l => {
     const contacts = Array.isArray(l.contact_candidates) ? l.contact_candidates : JSON.parse(l.contact_candidates || '[]')
-    const needsEnrichment = contacts.length === 0 || !l.linkedin_company_id
+    
+    // Check if we have any Swedish contacts
+    const hasSwedishContact = contacts.some(c => isSwedishPersonCandidate(c))
+    
+    // Needs enrichment if:
+    // 1. No contacts at all
+    // 2. No LinkedIn ID
+    // 3. Strict Sweden Only is ON, and we don't have a Swedish contact yet
+    const needsEnrichment = contacts.length === 0 || !l.linkedin_company_id || (STRICT_SWEDEN_ONLY && !hasSwedishContact)
 
     if (!needsEnrichment) {
-      console.log(`- Skipping ${l.company_name}: already has ${contacts.length} contacts and LinkedIn ID ${l.linkedin_company_id}`)
+      console.log(`- Skipping ${l.company_name}: already has ${contacts.length} contacts (has swedish: ${hasSwedishContact}) and LinkedIn ID ${l.linkedin_company_id}`)
     }
     return needsEnrichment
   })
