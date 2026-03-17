@@ -21,7 +21,7 @@ export default function Sidebar() {
     <aside className="shell-sidebar" aria-label="Primary navigation">
       <div className="shell-sidebar-brand">
         <div className="shell-sidebar-brand-mark">
-          <span className="material-symbols-outlined">rocket_launch</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>rocket_launch</span>
         </div>
         <div className="shell-sidebar-brand-copy">
           <h1 className="shell-sidebar-title">Induction</h1>

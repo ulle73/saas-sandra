@@ -3,23 +3,23 @@
 @import "tailwindcss";
 
 :root {
-  --bg-app: #fcfcfc;
-  --bg-panel: #ffffff;
-  --bg-panel-translucent: rgba(255, 255, 255, 0.75);
-  --bg-soft: #f4f4f5;
-  --bg-input: #ffffff;
+  --bg-app: #F5F7FA;
+  --bg-panel: #FFFFFF;
+  --bg-panel-translucent: rgba(255, 255, 255, 0.85);
+  --bg-soft: #F1F5F9;
+  --bg-input: #FFFFFF;
 
-  --text-primary: #09090b;
-  --text-secondary: #52525b;
-  --text-tertiary: #a1a1aa;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #94A3B8;
 
-  --border-subtle: #e4e4e7;
-  --border-medium: #d4d4d8;
+  --border-subtle: #E2E8F0;
+  --border-medium: #CBD5E1;
 
-  --primary: #09090b;
-  --primary-hover: #27272a;
-  --primary-subtle: rgba(9, 9, 11, 0.08);
-  --primary-glow: rgba(9, 9, 11, 0.15);
+  --primary: #0F172A;
+  --primary-hover: #1E293B;
+  --primary-subtle: rgba(15, 23, 42, 0.06);
+  --primary-glow: rgba(15, 23, 42, 0.12);
 
   --success: #10b981;
   --success-subtle: rgba(16, 185, 129, 0.12);
@@ -28,24 +28,24 @@
   --danger: #ef4444;
   --danger-subtle: rgba(239, 68, 68, 0.12);
 
-  --nav-bg: rgba(255, 255, 255, 0.85);
-  --nav-text: #71717a;
-  --nav-text-active: #09090b;
-  --nav-item-hover: rgba(9, 9, 11, 0.05);
+  --nav-bg: #FFFFFF;
+  --nav-text: #64748B;
+  --nav-text-active: #0F172A;
+  --nav-item-hover: rgba(15, 23, 42, 0.04);
 
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
 
   --sidebar-width: 17rem;
-  --surface-elevated: rgba(255, 255, 255, 0.95);
-  --surface-muted: #f4f4f5;
-  --surface-hover: #fafafa;
+  --surface-elevated: #FFFFFF;
+  --surface-muted: #F8FAFC;
+  --surface-hover: #F1F5F9;
 }
 
 :root[data-theme='dark'] {
@@ -366,7 +366,7 @@ button {
 .glass-panel {
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
 
@@ -385,7 +385,7 @@ button {
 .card {
   border: 1px solid var(--border-subtle);
   background: var(--bg-panel);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   transition: box-shadow 200ms ease, border-color 200ms ease;
 }
@@ -406,7 +406,7 @@ button {
 .panel-soft {
   background: var(--bg-soft);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 
 .panel-pad {
@@ -434,10 +434,10 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 150ms ease;
@@ -512,7 +512,7 @@ button {
   background: var(--bg-input);
   border: 1px solid var(--border-medium);
   color: var(--text-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   transition: all 150ms ease;
@@ -619,8 +619,8 @@ textarea.input-field {
   padding: 1rem 0.5rem;
   flex-direction: column;
   gap: 0.5rem;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border-subtle);
+  background: #0B1120;
+  border-right: 1px solid #1E293B;
   z-index: 10;
 }
 
@@ -1555,7 +1555,7 @@ textarea.input-field {
   gap: 0.35rem;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2299,8 +2299,9 @@ textarea.input-field {
   display: none;
   flex-direction: column;
   gap: 0.5rem;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border-subtle);
+  background: #0B1120;
+  border-right: 1px solid #1E293B;
+  color: #FFFFFF;
 }
 
 .shell-sidebar-brand {
@@ -2315,10 +2316,9 @@ textarea.input-field {
   height: 2.6rem;
   display: grid;
   place-items: center;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   color: #ffffff;
-  background: linear-gradient(135deg, #268cff, #0e6fd6);
-  box-shadow: 0 22px 34px -23px rgba(14, 111, 214, 0.85);
+  background: #2563EB;
 }
 
 .shell-sidebar-brand-mark .material-symbols-outlined {
@@ -2341,7 +2341,7 @@ textarea.input-field {
   letter-spacing: 0.12em;
   font-size: 0.61rem;
   font-weight: 700;
-  color: var(--text-tertiary);
+  color: #64748B;
 }
 
 .shell-sidebar-nav {
@@ -2358,17 +2358,17 @@ textarea.input-field {
   letter-spacing: 0.1em;
   font-size: 0.64rem;
   font-weight: 800;
-  color: var(--text-tertiary);
+  color: #64748B;
 }
 
 .shell-sidebar-link {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  border-radius: 0.82rem;
+  border-radius: var(--radius-md);
   padding: 0.58rem 0.66rem;
   border: 1px solid transparent;
-  color: var(--nav-text);
+  color: #94A3B8;
   transition: border-color 170ms ease, background-color 170ms ease, color 170ms ease, transform 170ms ease;
   opacity: 0;
   animation: ux-fade-in 320ms ease forwards;
@@ -2376,15 +2376,14 @@ textarea.input-field {
 }
 
 .shell-sidebar-link:hover {
-  border-color: var(--border-subtle);
-  background: var(--nav-item-hover);
-  color: var(--text-primary);
+  background: #1E293B;
+  color: #FFFFFF;
   transform: translateX(2px);
 }
 
 .shell-sidebar-link.is-active {
-  color: var(--text-primary);
-  background: var(--nav-item-hover);
+  color: #FFFFFF;
+  background: #1E293B;
   border-color: transparent;
   font-weight: 600;
 }
@@ -2392,18 +2391,18 @@ textarea.input-field {
 .shell-sidebar-link-icon {
   width: 1.96rem;
   height: 1.96rem;
-  border-radius: 0.62rem;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--nav-text-active);
+  color: inherit;
   background: transparent;
   transition: background-color 170ms ease, transform 170ms ease;
 }
 
 .shell-sidebar-link:hover .shell-sidebar-link-icon,
 .shell-sidebar-link.is-active .shell-sidebar-link-icon {
-  background: var(--primary-subtle);
+  background: transparent;
 }
 
 .shell-sidebar-link-label {
@@ -2413,11 +2412,10 @@ textarea.input-field {
 
 .shell-sidebar-link-badge {
   margin-left: auto;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 0.16rem 0.48rem;
-  border: 1px solid var(--primary-subtle);
-  background: var(--primary-subtle);
-  color: var(--primary);
+  background: #2563EB;
+  color: #FFFFFF;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   font-size: 0.58rem;
@@ -2435,28 +2433,27 @@ textarea.input-field {
   letter-spacing: 0.08em;
   font-size: 0.62rem;
   font-weight: 800;
-  color: var(--text-tertiary);
+  color: #64748B;
 }
 
 .shell-sidebar-meter {
   width: 100%;
   height: 0.44rem;
   border-radius: 999px;
-  background: var(--bg-soft);
+  background: #1E293B;
   overflow: hidden;
 }
 
 .shell-sidebar-meter-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--primary), var(--success));
-  box-shadow: 0 0 12px -4px var(--primary-glow);
+  background: #10B981;
   transition: width 320ms ease;
 }
 
 .shell-sidebar-footer-copy {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: #94A3B8;
   font-weight: 600;
 }
 
@@ -2465,11 +2462,10 @@ textarea.input-field {
   align-items: center;
   gap: 0.4rem;
   width: fit-content;
-  border-radius: 999px;
-  padding: 0.22rem 0.5rem;
-  border: 1px solid var(--success-subtle);
-  background: var(--success-subtle);
-  color: var(--success);
+  border-radius: var(--radius-sm);
+  padding: 0.32rem 0.6rem;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
   font-size: 0.62rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -2494,13 +2490,11 @@ textarea.input-field {
   min-height: 4.5rem;
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-panel-translucent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--bg-panel);
 }
 
 :root[data-theme='dark'] .app-topbar {
-  background: var(--bg-panel-translucent);
+  background: var(--bg-panel);
 }
 
 .app-topbar-left {
@@ -2557,8 +2551,8 @@ textarea.input-field {
 .app-topbar-search-input {
   width: 100%;
   border: 1px solid var(--border-subtle);
-  border-radius: 0.72rem;
-  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+  background: var(--bg-app);
   color: var(--text-primary);
   padding: 0.54rem 4.9rem 0.54rem 2.5rem;
   font-size: 0.85rem;
@@ -2619,7 +2613,7 @@ textarea.input-field {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  border-radius: 0.72rem;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: var(--surface-elevated);
   padding: 0.24rem 0.36rem 0.24rem 0.6rem;
@@ -2648,7 +2642,7 @@ textarea.input-field {
 .app-topbar-user-avatar {
   width: 2.08rem;
   height: 2.08rem;
-  border-radius: 0.62rem;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   background: var(--surface-muted);
   display: grid;

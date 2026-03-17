@@ -73,14 +73,14 @@ function MyApp({ Component, pageProps }) {
   useEffect(() => {
     try {
       const storedTheme = localStorage.getItem('app-theme')
-      if (storedTheme === 'light') {
-        setTheme('light')
-      } else {
-        // Default to dark for premium look, even if no storage or system preference
+      if (storedTheme === 'dark') {
         setTheme('dark')
+      } else {
+        // Default to light for new premium look
+        setTheme('light')
       }
     } catch {
-      setTheme('dark')
+      setTheme('light')
     }
   }, [])
 
