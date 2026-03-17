@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import { Search, ExternalLink, Check, X, UserSearch, Verified, Briefcase, CheckCircle, Sparkles, Quote, Archive } from 'lucide-react'
+import { Search, ExternalLink, Check, X, UserSearch, Verified, Briefcase, CheckCircle, Sparkles, Quote, Archive, RefreshCw } from 'lucide-react'
 
 function normalizeWebUrl(value) {
   const raw = String(value || '').trim()
@@ -16,6 +16,21 @@ function buildLinkedInPeopleSearchUrl(companyId, keyword = 'HR') {
   const encodedCompany = encodeURIComponent(JSON.stringify([id]))
   const encodedKeyword = encodeURIComponent(String(keyword || '').trim() || 'HR')
   return `https://www.linkedin.com/search/results/people/?keywords=${encodedKeyword}&currentCompany=${encodedCompany}`
+}
+
+function buildLinkedInSearchUrl(companyName, type = 'all') {
+  const name = String(companyName || '').trim()
+  if (!name) return null
+  const encodedName = encodeURIComponent(name)
+  if (type === 'jobs') {
+    return `https://www.linkedin.com/jobs/search/?keywords=${encodedName}`
+  }
+  if (type === 'people') {
+    // Include geoUrn for Sweden: ["105117694"] and origin FACETED_SEARCH
+    return `https://www.linkedin.com/search/results/people/?keywords=${encodedName}&origin=FACETED_SEARCH&geoUrn=%5B%22105117694%22%5D`
+  }
+  // Default is global search
+  return `https://www.linkedin.com/search/results/all/?keywords=${encodedName}&origin=GLOBAL_SEARCH_HEADER`
 }
 
 function parseContactCandidates(rawValue) {
@@ -75,6 +90,9 @@ export default function AILeads({ session }) {
   const [actionLoading, setActionLoading] = useState('')
   const [actionError, setActionError] = useState('')
   const [actionInfo, setActionInfo] = useState('')
+  const [syncUrl, setSyncUrl] = useState('')
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [showSyncInput, setShowSyncInput] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -227,8 +245,14 @@ export default function AILeads({ session }) {
   const selectedPrimaryCandidate = selectedLeadCandidates[0] || null
   const selectedCompanyUrl = normalizeWebUrl(selectedLead?.company_domain)
   const selectedLinkedInCompanyUrl = normalizeWebUrl(selectedLead?.linkedin_company_url)
+    || buildLinkedInSearchUrl(selectedLead?.company_name, 'all')
   const selectedLinkedInPeopleHrUrl = normalizeWebUrl(selectedLead?.linkedin_people_search_hr_url)
     || buildLinkedInPeopleSearchUrl(selectedLead?.linkedin_company_id, 'HR')
+    || buildLinkedInSearchUrl(`${selectedLead?.company_name} HR`, 'people')
+  const selectedLinkedInJobsUrl = normalizeWebUrl(selectedLead?.linkedin_jobs_url)
+    || buildLinkedInSearchUrl(selectedLead?.company_name, 'jobs')
+  const selectedLinkedInPeopleUrl = normalizeWebUrl(selectedLead?.linkedin_people_url)
+    || buildLinkedInSearchUrl(selectedLead?.company_name, 'people')
   const selectedSourceUrl = normalizeWebUrl(selectedLead?.source_url)
 
   const statusCounts = useMemo(() => {
@@ -293,6 +317,39 @@ export default function AILeads({ session }) {
 
     if (updateError) throw updateError
     applyLeadUpdate(leadId, payload)
+  }
+
+  const handleManualSync = async (e) => {
+    if (e) e.preventDefault()
+    if (!selectedLead || !syncUrl) return
+    
+    setIsSyncing(true)
+    try {
+      const response = await fetch('/api/leads/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: selectedLead.id, linkedinUrl: syncUrl }),
+      })
+      
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to sync lead')
+      
+      setActionInfo('Lead updated with new LinkedIn data')
+      setShowSyncInput(false)
+      setSyncUrl('')
+      // Refresh lead
+      const { data: updatedLead, error: refreshError } = await supabase
+        .from('lead_discovery_items')
+        .select('*')
+        .eq('id', selectedLead.id)
+        .single()
+      if (!refreshError && updatedLead) applyLeadUpdate(selectedLead.id, updatedLead)
+    } catch (error) {
+      console.error('Sync error:', error)
+      setActionError(error.message)
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   const handleArchive = async () => {
@@ -422,36 +479,54 @@ export default function AILeads({ session }) {
   return (
     <div className="flex flex-col lg:flex-row min-h-0 lg:h-[calc(100vh-80px)] ux-section-stagger">
       <div className="flex-1 flex flex-col gap-6 min-w-0 p-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">AI Sales Copilot</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">New Potential Opportunities</p>
+        <div className="flex items-center justify-between gap-6 flex-wrap mb-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              AI Sales Copilot
+              <span className="h-4 w-px bg-slate-200 dark:bg-slate-800"></span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest opacity-60">Opportunities</span>
+            </h1>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <button
-              type="button"
-              onClick={handleGenerateLeads}
-              disabled={generationLoading}
-              className="btn-primary"
-            >
-              {generationLoading ? 'Generating...' : 'Generate New Leads'}
-            </button>
-
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-md">
+          
+          <div className="flex items-center gap-4">
+            {/* Discrete Status Filters */}
+            <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/50 p-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-inner">
               {['new', 'accepted', 'rejected', 'converted'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all capitalize ${
+                  className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all flex items-center gap-2 ${
                     statusFilter === status
-                      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white'
+                      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white ring-1 ring-slate-200/50 dark:ring-slate-600/50'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
                 >
-                  {formatStatusLabel(status)} ({statusCounts[status] || 0})
+                  {status === 'accepted' ? 'Archived' : status}
+                  <span className={`inline-flex items-center justify-center min-w-[18px] h-[14px] px-1 rounded-full text-[8px] font-black ${
+                    statusFilter === status 
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' 
+                      : 'bg-slate-200/50 dark:bg-slate-700/20 text-slate-400 dark:text-slate-500'
+                  }`}>
+                    {statusCounts[status] || 0}
+                  </span>
                 </button>
               ))}
             </div>
+
+            {/* Discrete Generate Button */}
+            <button
+              type="button"
+              onClick={handleGenerateLeads}
+              disabled={generationLoading}
+              className="group flex items-center gap-2 px-5 py-2.5 bg-[#0F172A] dark:bg-white dark:text-[#0F172A] text-white rounded-full text-[9px] font-black uppercase tracking-[0.15em] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-md shadow-slate-200/50 dark:shadow-none"
+            >
+              {generationLoading ? (
+                <div className="size-3 border-2 border-current border-t-transparent animate-spin rounded-full" />
+              ) : (
+                <Sparkles size={11} className="group-hover:rotate-12 transition-transform" />
+              )}
+              {generationLoading ? 'Wait...' : 'Generate New'}
+            </button>
           </div>
         </div>
 
@@ -550,166 +625,266 @@ export default function AILeads({ session }) {
       </div>
 
       {selectedLead && (
-        <aside className="w-full lg:w-[450px] flex flex-col bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 h-full overflow-hidden">
-            <div className="p-8 border-b border-slate-50 dark:border-slate-800">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="size-14 rounded-md bg-primary text-white flex items-center justify-center text-2xl font-black shadow-sm">
+        <aside className="w-full lg:w-[450px] flex flex-col bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 h-full overflow-hidden shrink-0">
+          {/* Top Blue Header Section */}
+          <div className="p-6 md:p-8 shrink-0 bg-[#3B82F6] dark:bg-blue-600 text-white relative">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-start gap-4">
+                <div className="size-14 rounded-xl bg-white text-blue-500 flex items-center justify-center text-2xl font-black shadow-md shrink-0">
                   {selectedLead.company_name.substring(0, 2).toUpperCase()}
                 </div>
-                <div className="min-w-0">
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight break-words">{selectedLead.company_name}</h3>
-                  {selectedCompanyUrl ? (
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-black tracking-tight break-words">{selectedLead.company_name}</h3>
+                    <button 
+                      onClick={() => setShowSyncInput(!showSyncInput)}
+                      className="p-1 hover:bg-white/10 rounded transition-colors text-blue-200/50 hover:text-white"
+                      title="Update LinkedIn data"
+                    >
+                      <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                    </button>
+                  </div>
+                  
+                  {showSyncInput && (
+                    <form onSubmit={handleManualSync} className="mb-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="flex gap-2">
+                        <input 
+                          type="text"
+                          value={syncUrl}
+                          onChange={(e) => setSyncUrl(e.target.value)}
+                          placeholder="Paste LinkedIn Company URL..."
+                          className="flex-1 bg-white/10 border border-white/20 rounded px-2 py-1 text-[10px] text-white placeholder:text-white/30 focus:outline-none focus:border-white/40"
+                        />
+                        <button 
+                          type="submit"
+                          disabled={isSyncing || !syncUrl}
+                          className="px-2 py-1 bg-blue-500 hover:bg-blue-400 text-white rounded text-[8px] font-black uppercase tracking-widest disabled:opacity-50"
+                        >
+                          {isSyncing ? '...' : 'Sync'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                  {selectedCompanyUrl && (
                     <a
                       href={selectedCompanyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary text-xs font-bold hover:underline flex items-center gap-1 mt-1 break-all"
+                      className="text-blue-100 text-[10px] font-bold hover:text-white flex items-center gap-1 mt-1 break-all transition-colors"
                     >
                       {selectedLead.company_domain}
-                      <ExternalLink size={14} className="ml-1" />
+                      <ExternalLink size={10} className="ml-0.5" />
                     </a>
-                  ) : null}
+                  )}
                 </div>
               </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {selectedLinkedInCompanyUrl && (
-                    <a href={selectedLinkedInCompanyUrl} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
-                      Company
-                    </a>
-                  )}
-                  {selectedLead.linkedin_jobs_url && (
-                    <a href={selectedLead.linkedin_jobs_url} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
-                      Jobs
-                    </a>
-                  )}
-                  {selectedLead.linkedin_people_url && (
-                    <a href={selectedLead.linkedin_people_url} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
-                      LinkedIn People
-                    </a>
-                  )}
-                  {selectedLead.linkedin_about_url && (
-                    <a href={selectedLead.linkedin_about_url} target="_blank" rel="noopener noreferrer" className="btn !font-bold uppercase tracking-wider !text-[10px] border border-slate-200 text-slate-600 hover:bg-slate-50 bg-white">
-                      About
-                    </a>
-                  )}
-                </div>
-                {selectedSourceUrl && (
-                  <a href={selectedSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy mt-3 font-semibold text-slate-500">
-                    Open source article
+              
+              <div className="text-right flex flex-col items-end shrink-0 pl-2">
+                {/* <span className="text-[7px] font-black text-blue-200 uppercase tracking-widest mb-1 opacity-80">Link</span> */}
+                {selectedSourceUrl ? (
+                  <a href={selectedSourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline whitespace-nowrap text-blue-50">
+                    News a  rticle
                   </a>
+                ) : (
+                  <span className="text-[10px] font-bold opacity-30 whitespace-nowrap">None</span>
                 )}
+              </div>
+
+              {/* Match Confidence Badge */}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border shadow-sm ${
+                selectedLead.score >= 80 
+                  ? 'bg-emerald-50 border-emerald-500/20 text-emerald-700' 
+                  : 'bg-amber-50 border-amber-500/20 text-amber-700'
+              }`}>
+                <Verified size={10} strokeWidth={2.5} />
+                <span className="text-[8px] font-black uppercase tracking-wider">
+                  {selectedLead.score >= 80 ? 'Ultra High' : 'Strong'}
+                </span>
+              </div>
             </div>
 
-            <div className="p-8 grow overflow-y-auto space-y-6 dashboard-subsurface">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Target Title</p>
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <UserSearch size={16} />
-                    {selectedLead.recommended_person_title || selectedPrimaryCandidate?.title || 'Not detected'}
-                  </div>
-                </div>
-                <div className="p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Match Confidence</p>
-                  <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
-                    <Verified size={16} />
-                    {selectedLead.score >= 80 ? 'Ultra High' : 'Strong'}
-                  </div>
-                </div>
-                {selectedLead.linkedin_job_count !== null && (
-                  <div className="p-4 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 col-span-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Active LinkedIn Jobs</p>
-                    <div className="flex items-center gap-2 text-primary font-black text-sm">
-                      <Briefcase size={16} />
-                      {selectedLead.linkedin_job_count} open positions
-                    </div>
-                  </div>
-                )}
-              </div>
+            {/* Discrete Links Bar in Header */}
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10">
+              {selectedLinkedInCompanyUrl && (
+                <a href={selectedLinkedInCompanyUrl} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors">
+                  Company
+                </a>
+              )}
+              {selectedLinkedInJobsUrl && (
+                <a href={selectedLinkedInJobsUrl} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors">
+                  Jobs
+                </a>
+              )}
+              {selectedLinkedInPeopleUrl && (
+                <a href={selectedLinkedInPeopleUrl} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors">
+                  People
+                </a>
+              )}
+              {selectedLead?.linkedin_about_url && (
+                <a href={selectedLead.linkedin_about_url} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 text-[8px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors">
+                  About
+                </a>
+              )}
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Best Contact Candidate</h4>
+          <div className="p-6 grow overflow-y-auto space-y-8 bg-[#F8FAFC]/50 dark:bg-slate-900/50">
+            
+            {/* 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-5 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.15em] mb-3">Target Title</p>
+                <div className="flex flex-col items-center gap-2 text-slate-900 dark:text-white font-black text-xs uppercase tracking-tight">
+                  <UserSearch size={18} className="text-blue-500 mb-1" strokeWidth={2.5} />
+                  {selectedLead.recommended_person_title || selectedPrimaryCandidate?.title || 'Not detected'}
+                </div>
+              </div>
+              <div className="p-5 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.15em] mb-3">Match Confidence</p>
+                <div className={`flex flex-col items-center gap-2 font-black text-xs uppercase tracking-tight ${selectedLead.score >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <Verified size={18} className="mb-1" strokeWidth={2.5} />
+                  {selectedLead.score >= 80 ? 'Ultra High' : 'Strong'}
+                </div>
+              </div>
+            </div> 
+            */}
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-px bg-slate-200 dark:bg-slate-800 grow"></div>
+                <h4 className="text-[9px] font-black text-amber-600/60 dark:text-amber-500/60 uppercase tracking-widest whitespace-nowrap">Best Contact Candidate</h4>
+                <div className="h-px bg-slate-200 dark:bg-slate-800 grow"></div>
+              </div>
+              
+              <div className="p-6 bg-[#FFFBEB] dark:bg-amber-900/5 border-l-4 border-amber-400 shadow-sm rounded-r-lg">
                 {selectedPrimaryCandidate ? (
-                  <div className="panel-soft panel-pad stack-sm">
-                    <p className="copy-strong">{selectedPrimaryCandidate.name}</p>
-                    {selectedPrimaryCandidate.title ? <p className="small-copy muted">{selectedPrimaryCandidate.title}</p> : null}
-                    {selectedPrimaryCandidate.email ? <p className="small-copy">Email: {selectedPrimaryCandidate.email}</p> : null}
-                    {selectedPrimaryCandidate.phone ? <p className="small-copy">Phone: {selectedPrimaryCandidate.phone}</p> : null}
-                    {selectedPrimaryCandidate.linkedinUrl ? (
-                      <a href={selectedPrimaryCandidate.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-link small-copy">
-                        Open LinkedIn profile
-                      </a>
-                    ) : null}
-                  </div>
+                  <>
+                    <div className="flex items-start gap-4">
+                      <div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center shrink-0">
+                        <UserSearch size={18} strokeWidth={2.5} />
+                      </div>
+                      <div>
+                        <p className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-tight">{selectedPrimaryCandidate.name}</p>
+                        {selectedPrimaryCandidate.title && <p className="text-[10px] font-extrabold text-[#92400E] dark:text-amber-500/80 mt-0.5 uppercase tracking-wide leading-tight italic">{selectedPrimaryCandidate.title}</p>}
+                        
+                        <div className="mt-4 space-y-1">
+                          {selectedPrimaryCandidate.email && (
+                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                              <span className="text-[8px] font-black text-slate-300 uppercase py-0.5 px-1 border border-slate-100 dark:border-slate-800 rounded">Email</span>
+                              {selectedPrimaryCandidate.email}
+                            </div>
+                          )}
+                          {selectedPrimaryCandidate.linkedinUrl && (
+                            <a href={selectedPrimaryCandidate.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-semibold text-blue-600 hover:underline">
+                              <span className="text-[8px] font-black text-blue-100 bg-blue-600 uppercase py-0.5 px-1 rounded">LinkedIn</span>
+                              View Profile
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 ) : (
-                  <p className="small-copy muted">No candidate profile available for this lead yet.</p>
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="size-8 rounded-full bg-amber-100 dark:bg-amber-900/10 text-amber-500 flex items-center justify-center shrink-0">
+                      <UserSearch size={14} strokeWidth={2.5} />
+                    </div>
+                    <p className="text-xs font-black text-amber-700/60 dark:text-amber-500/60 uppercase tracking-widest italic">No candidate profile available yet</p>
+                  </div>
                 )}
               </div>
+            </div>
 
-              {selectedLead.linkedin_about_text && (
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Description</h4>
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
+            <div className="space-y-4">
+              <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Company Description</h4>
+              <div className="p-6 bg-[#F8FAFC] dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800/50">
+                {selectedLead.linkedin_about_text ? (
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
                     {selectedLead.linkedin_about_text}
                   </p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signal Evidence</h4>
-                <div className="flex gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-                  <CheckCircle size={14} className="text-emerald-500 shrink-0 mt-[1px]" />
-                  <span>{selectedLead.reason}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="flex items-center gap-1.5 text-[10px] font-black text-slate-900 uppercase tracking-widest">
-                  <Sparkles size={14} />
-                  AI Pitch Vector
-                </h4>
-                <div className="p-5 bg-white rounded-md border border-slate-200 relative">
-                  <Quote size={40} className="absolute top-3 right-4 opacity-10" />
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                    {selectedLead.pitch || 'No AI pitch available'}
-                  </p>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 leading-relaxed italic">
+                      Direct company bio not available in database.
+                    </p>
+                    {selectedLinkedInCompanyUrl && (
+                      <a 
+                        href={selectedLinkedInCompanyUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors shadow-sm"
+                      >
+                        <ExternalLink size={12} className="text-blue-500" />
+                        Search for bios on LinkedIn
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="p-8 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center gap-4">
-              {actionError ? <p className="form-error w-full text-center">{actionError}</p> : null}
-              {actionInfo ? <p className="form-info w-full text-center">{actionInfo}</p> : null}
+            <div className="grid grid-cols-2 gap-4 pb-4">
+              <div className="p-5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h4 className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                  <div className="size-4 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"><CheckCircle size={10} strokeWidth={3} /></div>
+                  Signal Evidence
+                </h4>
+                <p className="text-[11px] font-black text-slate-800 dark:text-slate-200 italic leading-snug">"{selectedLead.reason}"</p>
+              </div>
 
+              <div className="p-5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h4 className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                  <div className="size-4 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"><Sparkles size={10} strokeWidth={3} /></div>
+                  AI Pitch Vector
+                </h4>
+                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 italic leading-snug">
+                  "{selectedLead.pitch || 'No pitch available'}"
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 md:p-8 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-6 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.02)]">
+            {actionError ? <p className="form-error w-full text-center mb-0">{actionError}</p> : null}
+            {actionInfo ? <p className="form-info w-full text-center mb-0">{actionInfo}</p> : null}
+
+            <div className="flex gap-2.5 h-[34px] w-full">
               <button
-                className="flex items-center justify-center gap-2 text-slate-800 font-medium hover:text-primary transition-colors disabled:opacity-50"
+                className="flex-[1.2] rounded-md bg-[#E6F6EB] hover:bg-[#D9F2E0] border border-[#3B8E65]/30 text-[#3B8E65] flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] px-4 shadow-sm"
                 onClick={handleConvert}
                 disabled={Boolean(actionLoading)}
               >
-                <Check size={18} strokeWidth={2.5} />
-                {actionLoading === 'convert' ? 'Converting...' : 'Accept & Create Account'}
+                <div className="size-4 rounded-full bg-[#3B8E65] text-white flex items-center justify-center shrink-0 shadow-sm">
+                   <Check size={10} strokeWidth={5} />
+                </div>
+                <span className="font-extrabold tracking-[0.1em] uppercase whitespace-nowrap" style={{ fontSize: '8px' }}>ACCEPT</span>
               </button>
               
-              <div className="flex items-center justify-center gap-12 w-full mt-2">
-                <button
-                  className="flex items-center justify-center gap-2 text-slate-800 font-medium hover:text-slate-500 transition-colors disabled:opacity-50"
-                  onClick={handleArchive}
-                  disabled={Boolean(actionLoading)}
-                >
-                  <Archive size={16} strokeWidth={2} />
-                  {actionLoading === 'archive' ? 'Archiving...' : 'Archive'}
-                </button>
-                <button
-                  className="flex items-center justify-center gap-2 text-slate-800 font-medium hover:text-rose-500 transition-colors disabled:opacity-50"
-                  onClick={handleReject}
-                  disabled={Boolean(actionLoading)}
-                >
-                  <X size={16} strokeWidth={2.5} />
-                  {actionLoading === 'reject' ? 'Rejecting...' : 'Reject'}
-                </button>
-              </div>
+              <button
+                className="flex-1 rounded-md bg-[#F0EEFE] hover:bg-[#E5E1FD] border border-[#6D5DF0]/30 text-[#6D5DF0] flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] px-4 shadow-sm"
+                onClick={handleArchive}
+                disabled={Boolean(actionLoading)}
+              >
+                <Archive size={16} className="text-[#6D5DF0] shrink-0" fill="currentColor" strokeWidth={1} />
+                <span className="font-extrabold tracking-[0.1em] uppercase whitespace-nowrap" style={{ fontSize: '8px' }}>ARCHIVE</span>
+              </button>
+
+              <button
+                className="flex-1 rounded-md bg-[#FEEBF0] hover:bg-[#FDDCE5] border border-[#C2455A]/30 text-[#C2455A] flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] px-4 shadow-sm"
+                onClick={handleReject}
+                disabled={Boolean(actionLoading)}
+              >
+                <div className="size-4 rounded-full bg-[#C2455A] text-white flex items-center justify-center shrink-0 shadow-sm">
+                   <X size={10} strokeWidth={5} />
+                </div>
+                <span className="font-extrabold tracking-[0.1em] uppercase whitespace-nowrap" style={{ fontSize: '8px' }}>REJECT</span>
+              </button>
             </div>
+            
+            <div className="text-center">
+              <span className="text-[7px] font-black text-slate-400 uppercase tracking-[0.25em] select-none opacity-40">KEYBOARD: [R] Reject • [A] Archive • [Enter] Accept</span>
+            </div>
+          </div>
         </aside>
       )}
     </div>
